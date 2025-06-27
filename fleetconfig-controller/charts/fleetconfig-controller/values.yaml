@@ -23,7 +23,6 @@ fleetConfig:
     ## @param fleetConfig.spokeFeatureGates.RawFeedbackJsonString RawFeedbackJsonString feature gate.
     RawFeedbackJsonString: true
   ## @param fleetConfig.source Source bundle for the Cluster Manager and all Klusterlets.
-  # Source bundle for the Cluster Manager and all Klusterlets.
   source:
     ## @param fleetConfig.source.bundleVersion Bundle version.
     bundleVersion: v0.16.0
