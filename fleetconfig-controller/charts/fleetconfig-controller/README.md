@@ -17,6 +17,7 @@ helm install fleetconfig-controller ocm/fleetconfig-controller -n fleetconfig-sy
 ### FleetConfig Configuration
 
 Configuration for the FleetConfig resource created on the Hub. By default, bootstraps the Hub cluster in hub-as-spoke mode.
+### Spoke Feature Gates
 Uncomment and configure `fleetConfig.spokeFeatureGates` to enable feature gates for the Klusterlet on each Spoke.
 Do not disable the feature gates that are enabled by default.
 
@@ -28,6 +29,15 @@ Available Spoke Feature Gates:
 - **ExecutorValidatingCaches** (ALPHA - default=false) - Enables executor validating caches
 - **RawFeedbackJsonString** (ALPHA - default=false) - Enables raw feedback JSON string support
 - **V1beta1CSRAPICompatibility** (ALPHA - default=false) - Enables v1beta1 CSR API compatibility
+### Registration Authentication Configuration
+Registration authentication configuration for multicluster setup. authentication can be configured by uncommenting `multicluster.registrationAuth`
+Optional Configuration for the Registration Authentication. If not provided, will default to using certificate signing requests (CSR).
+For EKS multicluster configurations, set the driver to "awsirsa" to use AWS IAM Roles for Service Accounts.
+Available fields:
+- **driver**: The authentication driver to use (default: "csr"). Set to "awsirsa" for EKS multicluster.
+- **hubClusterARN**: The ARN of the hub cluster (required for EKS multicluster).
+- **autoApprovedARNPatterns**: Optional list of spoke cluster ARN patterns that the hub will auto approve.
+### Hub Cluster Manager Feature Gates
 Feature gates for the Hub's Cluster Manager. Do not disable the feature gates that are enabled by default.
 
 Available Hub Cluster Manager Feature Gates:
@@ -41,7 +51,9 @@ Available Hub Cluster Manager Feature Gates:
 - **NilExecutorValidating** (ALPHA - default=false) - Enables nil executor validation
 - **ResourceCleanup** (BETA - default=true) - Enables automatic resource cleanup
 - **V1beta1CSRAPICompatibility** (ALPHA - default=false) - Enables v1beta1 CSR API compatibility
-Singleton control plane configuration. If provided, deploy a singleton control plane instead of Cluster Manager.
+
+### Singleton Control Plane Configuration
+If provided, deploy a singleton control plane instead of Cluster Manager.
 To enable singleton mode, `fleetConfig.hub.singletonControlPlane` must be uncommented and configured with the following options:
 - **name**: The name of the singleton control plane (default: "singleton-controlplane")
 - **helm**: Helm configuration for the multicluster-controlplane Helm chart
