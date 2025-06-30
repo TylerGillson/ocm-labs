@@ -17,7 +17,8 @@ helm install fleetconfig-controller ocm/fleetconfig-controller -n fleetconfig-sy
 ### FleetConfig Configuration
 
 Configuration for the FleetConfig resource created on the Hub. By default, bootstraps the Hub cluster in hub-as-spoke mode.
-Feature gates for the Klusterlet on each Spoke. Do not disable the feature gates that are enabled by default.
+Uncomment and configure `fleetConfig.spokeFeatureGates` to enable feature gates for the Klusterlet on each Spoke.
+Do not disable the feature gates that are enabled by default.
 
 Available Spoke Feature Gates:
 - **AddonManagement** (ALPHA - default=true) - Enables addon management functionality
@@ -40,6 +41,18 @@ Available Hub Cluster Manager Feature Gates:
 - **NilExecutorValidating** (ALPHA - default=false) - Enables nil executor validation
 - **ResourceCleanup** (BETA - default=true) - Enables automatic resource cleanup
 - **V1beta1CSRAPICompatibility** (ALPHA - default=false) - Enables v1beta1 CSR API compatibility
+Singleton control plane configuration. If provided, deploy a singleton control plane instead of Cluster Manager.
+Uncomment and configure `fleetConfig.hub.singletonControlPlane` to enable singleton mode.
+To enable singleton mode, `fleetConfig.hub.singletonControlPlane` must be uncommented and configured with the following options:
+- **name**: The name of the singleton control plane (default: "singleton-controlplane")
+- **helm**: Helm configuration for the multicluster-controlplane Helm chart
+- **values**: Raw, YAML-formatted Helm values
+- **set**: List of comma-separated Helm values (e.g., key1=val1,key2=val2)
+- **setJson**: List of comma-separated Helm JSON values
+- **setLiteral**: List of comma-separated Helm literal STRING values
+- **setString**: List of comma-separated Helm STRING values
+
+Refer to the [Multicluster Controlplane configuration](https://github.com/open-cluster-management-io/multicluster-controlplane/blob/main/charts/multicluster-controlplane/values.yaml) for more details.
 
 | Name                                                                  | Description                                                                                                                                                                            | Value                             |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -57,7 +70,6 @@ Available Hub Cluster Manager Feature Gates:
 | `fleetConfig.hub.force`                                               | If set, the hub will be reinitialized.                                                                                                                                                 | `false`                           |
 | `fleetConfig.hub.kubeconfig.context`                                  | The context to use in the kubeconfig file. Leave empty to use the current context.                                                                                                     | `""`                              |
 | `fleetConfig.hub.kubeconfig.inCluster`                                | If set, the kubeconfig will be read from the cluster. Only applicable for same-cluster operations.                                                                                     | `true`                            |
-| `fleetConfig.hub.singletonControlPlane`                               | Singleton control plane configuration. If provided, deploy a singleton control plane instead of Cluster Manager.                                                                       | `{}`                              |
 | `fleetConfig.spokes[0].name`                                          | Name of the spoke cluster.                                                                                                                                                             | `hub-as-spoke`                    |
 | `fleetConfig.spokes[0].createNamespace`                               | If true, create open-cluster-management namespace and agent namespace (open-cluster-management-agent for Default mode, <klusterlet-name> for Hosted mode), otherwise use existing one. | `true`                            |
 | `fleetConfig.spokes[0].createNamespace`                               | If true, create open-cluster-management namespace and agent namespace (open-cluster-management-agent for Default mode,                                                                 | `true`                            |
