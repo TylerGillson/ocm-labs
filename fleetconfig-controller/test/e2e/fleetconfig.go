@@ -64,7 +64,7 @@ var _ = Describe("fleetconfig", Label("fleetconfig"), Ordered, func() {
 	Context("deploy and teardown multicluster with ResourceCleanup feature gate enabled", func() {
 
 		It("should join the spoke and hub-as-spoke clusters to the hub", func() {
-			// NOTE: The multicluster CR is created by devspace when the fleetconfig-controller chart is installed.
+			// NOTE: The FleetConfig CR is created by devspace when the fleetconfig-controller chart is installed.
 			//       Its configuration is defined via the fleetConfig values.
 			ensureFleetConfigProvisioned(tc, fc, nil)
 
