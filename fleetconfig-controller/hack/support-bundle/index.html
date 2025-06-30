@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleetconfig Support Bundle</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Fleetconfig Support Bundle</h1>
+    </div>
+    
+    <div class="container">
+        <div class="pane" id="hub-pane">
+            <div class="pane-header">
+                <span class="pane-title">Hub</span>
+                <div class="pane-info">
+                    <span class="breadcrumb" id="hub-breadcrumb"></span>
+                </div>
+                <div class="pane-controls">
+                    <button class="back-button" id="hub-back" style="display: none;" onclick="navigateBack('hub')">← Back</button>
+                    <button class="wrap-button" id="hub-wrap" onclick="toggleWrap('hub')" title="Toggle word wrap">Wrap</button>
+                    <button class="minimize-button" id="hub-minimize" onclick="event.stopPropagation(); toggleMinimize('hub')">−</button>
+                </div>
+            </div>
+            <div class="pane-content" id="hub-content">
+                <div class="loading">Loading hub files...</div>
+            </div>
+        </div>
+        
+        <div class="pane" id="spoke-pane">
+            <div class="pane-header">
+                <span class="pane-title">Spoke</span>
+                <div class="pane-info">
+                    <span class="breadcrumb" id="spoke-breadcrumb"></span>
+                </div>
+                <div class="pane-controls">
+                    <button class="back-button" id="spoke-back" style="display: none;" onclick="navigateBack('spoke')">← Back</button>
+                    <button class="wrap-button" id="spoke-wrap" onclick="toggleWrap('spoke')" title="Toggle word wrap">Wrap</button>
+                    <button class="minimize-button" id="spoke-minimize" onclick="event.stopPropagation(); toggleMinimize('spoke')">−</button>
+                </div>
+            </div>
+            <div class="pane-content" id="spoke-content">
+                <div class="loading">Loading spoke files...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html> 

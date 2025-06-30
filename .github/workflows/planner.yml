@@ -21,6 +21,7 @@ jobs:
       id-token: write
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
+      repositories: ${{ steps.repo-matrix.outputs.repositories }}
     steps:
     - name: Checkout
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -44,6 +45,10 @@ jobs:
 
         echo "Diff will compare main ($BASE_SHA) with $HEAD_SHA"
 
+    - name: Generate repository matrix
+      id: repo-matrix
+      uses: ./.github/actions/generate-repo-matrix
+
     - name: Build changed project matrix
       id: generate
       run: |
@@ -52,7 +57,9 @@ jobs:
         matrixJson="{\"repo\":["
         declare -A changedProjects
 
-        for repo in fleetconfig-controller; do
+        # Get repository names from composite action output
+        repositories=$(echo '${{ steps.repo-matrix.outputs.repositories }}' | jq -r 'keys[]')
+        for repo in $repositories; do
           if git diff --name-only $BASE_SHA $HEAD_SHA | grep "^$repo/"; then
             changedProjects[$repo]=1
           fi
@@ -101,4 +108,5 @@ jobs:
     uses: ./.github/workflows/e2e.yml
     with:
       repo: ${{ matrix.repo }}
+      artifacts: ${{ fromJson(needs.generate-matrix.outputs.repositories)[matrix.repo]['e2e-artifacts'] }}
     secrets: inherit
