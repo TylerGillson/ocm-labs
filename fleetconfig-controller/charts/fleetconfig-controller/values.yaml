@@ -14,11 +14,11 @@ fleetConfig:
   ## ### Spoke Feature Gates
   ## Uncomment and configure `fleetConfig.spokeFeatureGates` to enable feature gates for the Klusterlet on each Spoke.
   ## Do not disable the feature gates that are enabled by default.
-  ## 
+  ##
   ## Available Spoke Feature Gates:
   ## - **AddonManagement** (ALPHA - default=true) - Enables addon management functionality
   ## - **AllAlpha** (ALPHA - default=false) - Enables all alpha features
-  ## - **AllBeta** (BETA - default=false) - Enables all beta features  
+  ## - **AllBeta** (BETA - default=false) - Enables all beta features
   ## - **ClusterClaim** (ALPHA - default=true) - Enables cluster claim functionality
   ## - **ExecutorValidatingCaches** (ALPHA - default=false) - Enables executor validating caches
   ## - **RawFeedbackJsonString** (ALPHA - default=false) - Enables raw feedback JSON string support
@@ -60,7 +60,7 @@ fleetConfig:
       ## @descriptionStart
       ## ### Hub Cluster Manager Feature Gates
       ## Feature gates for the Hub's Cluster Manager. Do not disable the feature gates that are enabled by default.
-      ## 
+      ##
       ## Available Hub Cluster Manager Feature Gates:
       ## - **AddonManagement** (ALPHA - default=true) - Enables addon management functionality
       ## - **AllAlpha** (ALPHA - default=false) - Enables all alpha features
@@ -131,10 +131,10 @@ fleetConfig:
     ##   - **setJson**: List of comma-separated Helm JSON values
     ##   - **setLiteral**: List of comma-separated Helm literal STRING values
     ##   - **setString**: List of comma-separated Helm STRING values
-    ## 
+    ##
     ## Refer to the [Multicluster Controlplane configuration](https://github.com/open-cluster-management-io/multicluster-controlplane/blob/main/charts/multicluster-controlplane/values.yaml) for more details.
     ## @descriptionEnd
-    # singletonControlPlane: 
+    # singletonControlPlane:
       ## The name of the singleton control plane.
       # name: "singleton-controlplane"
       ## Helm configuration for the multicluster-controlplane Helm chart.
@@ -152,8 +152,8 @@ fleetConfig:
   ## @param fleetConfig.spokes[0].name Name of the spoke cluster.
   ## Configuration for Spoke clusters.
   spokes:
-      ## @param fleetConfig.spokes[0].createNamespace If true, create open-cluster-management namespace and agent namespace (open-cluster-management-agent for Default mode, <klusterlet-name> for Hosted mode), otherwise use existing one.
-    - name: hub-as-spoke # do not edit this name if you are using the default hub-as-spoke mode
+      ## @param fleetConfig.spokes[0].createNamespace If true, create open-cluster-management namespace and agent namespace (open-cluster-management-agent for Default mode, <klusterlet-name> for Hosted mode), otherwise use existing one. Do not edit this name if you are using the default hub-as-spoke mode.
+    - name: hub-as-spoke
       ## @param fleetConfig.spokes[0].createNamespace If true, create open-cluster-management namespace and agent namespace (open-cluster-management-agent for Default mode,
       # <klusterlet-name> for Hosted mode), otherwise use existing one.
       createNamespace: true
