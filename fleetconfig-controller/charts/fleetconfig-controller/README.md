@@ -42,7 +42,6 @@ Available Hub Cluster Manager Feature Gates:
 - **ResourceCleanup** (BETA - default=true) - Enables automatic resource cleanup
 - **V1beta1CSRAPICompatibility** (ALPHA - default=false) - Enables v1beta1 CSR API compatibility
 Singleton control plane configuration. If provided, deploy a singleton control plane instead of Cluster Manager.
-Uncomment and configure `fleetConfig.hub.singletonControlPlane` to enable singleton mode.
 To enable singleton mode, `fleetConfig.hub.singletonControlPlane` must be uncommented and configured with the following options:
 - **name**: The name of the singleton control plane (default: "singleton-controlplane")
 - **helm**: Helm configuration for the multicluster-controlplane Helm chart
