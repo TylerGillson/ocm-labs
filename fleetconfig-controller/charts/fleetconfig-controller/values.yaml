@@ -2,9 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# Configuration for the FleetConfig resource created on the Hub.
-# By default, bootstraps the Hub cluster in hub-as-spoke mode.
-## @skip fleetConfig
+## @param fleetConfig Configuration for the FleetConfig resource created on the Hub. By default, bootstraps the Hub cluster in hub-as-spoke mode.
 fleetConfig:
   ## @param fleetConfig.enabled Whether to install fleetconfig-controller.
   enabled: true
