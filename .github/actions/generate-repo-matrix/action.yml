@@ -15,8 +15,8 @@ runs:
       shell: bash
       run: |
         set -e
-        # Read repositories.json
-        repositories_json=$(cat .github/repositories.json)
+        # Read repositories.json and properly escape for GitHub Actions
+        repositories_json=$(cat .github/repositories.json | jq -c .)
         echo "repositories=$repositories_json" >> $GITHUB_OUTPUT
         
         # Extract repository names for matrix
