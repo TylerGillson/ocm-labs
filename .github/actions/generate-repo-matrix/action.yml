@@ -21,5 +21,5 @@ runs:
         
         # Extract repository names for matrix
         repository_names=$(echo "$repositories_json" | jq -r 'keys')
-        matrix_json=$(echo "$repository_names" | jq '{"repository": .}')
+        matrix_json=$(echo "$repository_names" | jq -c '{"repository": .}')
         echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
