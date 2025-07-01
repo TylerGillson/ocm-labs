@@ -100,7 +100,7 @@ deployments:
         name: ${CONTEXT}/charts/fleetconfig-controller
       values:
         image:
-          repository: ${IMAGE_REPOSITORY}
+          repository: ${IMAGE_REPOSITORY}-local
           tag: local
       valuesFiles:
       - ${CONTEXT}/charts/fleetconfig-controller/values.yaml

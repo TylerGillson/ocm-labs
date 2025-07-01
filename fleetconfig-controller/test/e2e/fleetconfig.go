@@ -47,7 +47,7 @@ var _ = Describe("fleetconfig", Label("fleetconfig"), Ordered, func() {
 		tc = setupTestEnvironment()
 
 		By("deploying fleetconfig")
-		Expect(utils.DevspaceRunPipeline(tc.ctx, tc.hubKubeconfig, "deploy", fcNamespace)).To(Succeed())
+		Expect(utils.DevspaceRunPipeline(tc.ctx, tc.hubKubeconfig, "deploy-local", fcNamespace)).To(Succeed())
 	})
 
 	AfterAll(func() {
