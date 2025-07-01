@@ -119,8 +119,8 @@ func initializeHub(ctx context.Context, kClient client.Client, mc *v1alpha1.Flee
 		initArgs = append(initArgs, raArgs...)
 	}
 
-	// hub.clusterManager defaults to an empty object, so check singleton control plane first
-	if mc.Spec.Hub.SingletonControlPlane != nil {
+	// hub.clusterManager defaults to an empty object so check singleton control plane first
+	if mc.Spec.Hub.SingletonControlPlane != nil && mc.Spec.Hub.SingletonControlPlane.Name != "" {
 		initArgs = append(initArgs, "--singleton=true")
 		initArgs = append(initArgs, "--singleton-name", mc.Spec.Hub.SingletonControlPlane.Name)
 		if mc.Spec.Hub.SingletonControlPlane.Helm.Values != "" {
