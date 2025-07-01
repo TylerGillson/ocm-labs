@@ -55,9 +55,10 @@ def section_if_present(changes: [], pr_title):
 if __name__ == '__main__':
     args = sys.argv[1:]
     auth = Auth.Token(args[0])
-    release_tag = args[1]
+    repo_name = args[1]
+    release_tag = args[2]
     g = Github(auth=auth)
-    repo = g.get_repo("open-cluster-management-io/ocm")
+    repo = g.get_repo("open-cluster-management-io/lab")
     pulls = repo.get_pulls(state='closed', sort='created', base='main', direction='desc')
 
     # get the last release tag
@@ -89,6 +90,8 @@ if __name__ == '__main__':
         if pr.number == last_release_pr:
             break
         if pr.is_merged():
+            if repo_name not in pr.labels:
+                continue
             prtype, title = pr_type_from_title(pr.title)
             if prtype == PRType.FeaturePR:
                 features.append(change_entry(title, pr.number, pr.user.login))
@@ -104,7 +107,7 @@ if __name__ == '__main__':
                 uncategorized.append(change_entry(title, pr.number, pr.user.login))
 
     # Print
-    print("# Open Cluster Management %s" % release_tag)
+    print("# %s %s" % (repo_name, release_tag))
     print("\n**changes since [%s](https://github.com/open-cluster-management-io/releases/%s)**\n"
           % (last_release_tag, last_release_tag))
     section_if_present(breakings, ":warning: Breaking Changes")

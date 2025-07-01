@@ -77,7 +77,7 @@ jobs:
 
       - name: generate changelog
         run: |
-          python hack/changelog.py ${{ secrets.GITHUB_TOKEN }} ${{ needs.env.outputs.RELEASE_VERSION }} > /home/runner/work/changelog.txt
+          python hack/changelog.py ${{ secrets.GITHUB_TOKEN }} ${{ matrix.repository }} ${{ needs.env.outputs.RELEASE_VERSION }} > /home/runner/work/changelog.txt
           cat /home/runner/work/changelog.txt
 
       - name: setup helm
