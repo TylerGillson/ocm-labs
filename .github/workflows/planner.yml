@@ -22,6 +22,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
       repositories: ${{ steps.repo-matrix.outputs.repositories }}
+      artifacts: ${{ steps.generate.outputs.artifacts }}
     steps:
     - name: Checkout
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -56,35 +57,41 @@ jobs:
       run: |
         set -e
 
-        matrixJson="{\"repo\":["
-        declare -A changedProjects
+        # Get repository names and check for changes
+        repositories_json='${{ steps.repo-matrix.outputs.repositories }}'
+        changed_repos=()
 
-        # Get repository names from composite action output
-        repositories=$(echo '${{ steps.repo-matrix.outputs.repositories }}' | jq -r 'keys[]')
-        for repo in $repositories; do
-          if git diff --name-only $BASE_SHA $HEAD_SHA | grep "^$repo/"; then
-            changedProjects[$repo]=1
+        # Check each repository for changes
+        while IFS= read -r repo; do
+          if git diff --name-only $BASE_SHA $HEAD_SHA | grep "^$repo/" > /dev/null 2>&1; then
+            changed_repos+=("$repo")
           fi
-        done
+        done < <(echo "$repositories_json" | jq -r 'keys[]')
 
-        for repo in "${!changedProjects[@]}"; do
-          matrixJson="${matrixJson}\"$repo\","
-        done            
-
-        # Remove last "," and add closing brackets
-        if [[ $matrixJson == *, ]]; then
-          matrixJson="${matrixJson%?}"
-        fi
-        matrixJson="$matrixJson]}"
-        echo "Matrix: $matrixJson"
-
-        # Set outputs
-        echo "matrix=$( echo "$matrixJson" )" >> $GITHUB_OUTPUT
-
-        if [[ $matrixJson == "{\"repo\":[]}" ]]; then
+        if [ ${#changed_repos[@]} -eq 0 ]; then
           echo "No changes detected for any project"
           echo "matrix=" >> $GITHUB_OUTPUT
+          echo "artifacts={}" >> $GITHUB_OUTPUT
+        else
+          # Convert changed repos array to JSON
+          changed_repos_json=$(printf '%s\n' "${changed_repos[@]}" | jq -R . | jq -s .)
+          matrixJson=$(echo "$changed_repos_json" | jq -c '{"repo": .}')
+
+          # Generate artifacts JSON with workspace prefix
+          artifacts_json=$(echo "$repositories_json" | jq -c \
+            --argjson changed_repos "$changed_repos_json" \
+            --arg workspace "${{ github.workspace }}" \
+            'to_entries |
+              map(select(.key as $repo | $changed_repos | index($repo) != null)) |
+              from_entries |
+              with_entries(.key as $repo | .value = (.value["e2e-artifacts"] | map($workspace + "/" + $repo + "/" + .) | join("\n")))')
+
+          echo "matrix=$matrixJson" >> $GITHUB_OUTPUT
+          echo "artifacts=$artifacts_json" >> $GITHUB_OUTPUT
         fi
+
+        echo "Matrix: $matrixJson"
+        echo "Artifacts: $artifacts_json"
 
   call-test:
     name: test
@@ -110,5 +117,5 @@ jobs:
     uses: ./.github/workflows/e2e.yml
     with:
       repo: ${{ matrix.repo }}
-      artifacts: ${{ fromJson(needs.generate-matrix.outputs.repositories)[matrix.repo]['e2e-artifacts'] }}
+      artifacts: ${{ fromJson(needs.generate-matrix.outputs.artifacts)[matrix.repo] }}
     secrets: inherit
