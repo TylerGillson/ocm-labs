@@ -48,6 +48,8 @@ jobs:
     - name: Generate repository matrix
       id: repo-matrix
       uses: ./.github/actions/generate-repo-matrix
+      with:
+        repoRoot: "."
 
     - name: Build changed project matrix
       id: generate
