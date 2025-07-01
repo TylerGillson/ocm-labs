@@ -75,6 +75,11 @@ func WarnError(err error, format string, a ...any) {
 
 // DevspaceRunPipeline runs a devspace pipeline
 func DevspaceRunPipeline(ctx context.Context, kubeconfig, pipeline, namespace string) error {
+	projDir, err := GetProjectDir()
+	if err != nil {
+		return fmt.Errorf("failed to get project directory: %v", err)
+	}
+
 	cmd := exec.Command(
 		"devspace", "run-pipeline", pipeline,
 		"--kubeconfig", kubeconfig,
@@ -82,14 +87,20 @@ func DevspaceRunPipeline(ctx context.Context, kubeconfig, pipeline, namespace st
 		"--no-warn", "--force-build",
 		// "--debug",
 	)
+	cmd.Dir = projDir
 
 	Info("Running devspace pipeline: %s", cmd.String())
-	_, err := RunCommand(cmd, "test", false)
+	_, err = RunCommand(cmd, "", false)
 	return err
 }
 
 // DevspacePurge purges all resources created by devspace
 func DevspacePurge(ctx context.Context, kubeconfig, namespace string) error {
+	projDir, err := GetProjectDir()
+	if err != nil {
+		return fmt.Errorf("failed to get project directory: %v", err)
+	}
+
 	cmd := exec.Command(
 		"devspace", "purge",
 		"--kubeconfig", kubeconfig,
@@ -97,9 +108,10 @@ func DevspacePurge(ctx context.Context, kubeconfig, namespace string) error {
 		"--no-warn",
 		// "--debug",
 	)
+	cmd.Dir = projDir
 
 	Info("Running devspace purge: %s", cmd.String())
-	_, err := RunCommand(cmd, "test", false)
+	_, err = RunCommand(cmd, "", false)
 	return err
 }
 

@@ -26,10 +26,17 @@ jobs:
         run: |
           echo "MAJOR_RELEASE_VERSION=${RELEASE_VERSION%.*}" >> $GITHUB_ENV
           echo "TRIMMED_RELEASE_VERSION=${RELEASE_VERSION#v}" >> $GITHUB_ENV
+
+      - name: generate matrix
+        id: generate-matrix
+        uses: ./go/src/open-cluster-management.io/lab/.github/actions/generate-repo-matrix
+        with:
+          repoRoot: go/src/open-cluster-management.io/lab
     outputs:
       MAJOR_RELEASE_VERSION: ${{ env.MAJOR_RELEASE_VERSION }}
       RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
       TRIMMED_RELEASE_VERSION: ${{ env.TRIMMED_RELEASE_VERSION }}
+      MATRIX: ${{ steps.generate-matrix.outputs.matrix }}
 
   upload:
     name: upload
@@ -38,8 +45,7 @@ jobs:
     permissions:
       contents: write
     strategy:
-      matrix:
-        repository: [ fleetconfig-controller ]
+      matrix: ${{ fromJson(needs.env.outputs.MATRIX) }}
     steps:
       - name: submit fleetconfig-controller chart to OCM chart repo
         if: github.event_name != 'pull_request'

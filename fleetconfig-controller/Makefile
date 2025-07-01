@@ -94,9 +94,10 @@ test-unit: manifests generate fmt vet envtest ## Run unit tests.
 		$(shell go list ./... | grep -v '/test/e2e')
 
 .PHONY: test-e2e
-test-e2e: kind kubectl ginkgo ## Run e2e tests in the top-level test directory.
+test-e2e: kind kubectl ginkgo support-bundle ## Run e2e tests in the top-level test directory.
 	@mkdir -p $(COVER_DIR)/e2e
 	rm -rf $(COVER_DIR)/e2e/*
+	@set -a; source ./hack/.versions.env; set +a; \
 	$(GINKGO) run -vv \
 		--cover \
 		--coverpkg=./... \

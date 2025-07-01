@@ -38,9 +38,16 @@ jobs:
         run: |
           echo "MAJOR_RELEASE_VERSION=${RELEASE_VERSION%.*}" >> $GITHUB_ENV
           echo "TRIMMED_RELEASE_VERSION=${RELEASE_VERSION#v}" >> $GITHUB_ENV
+
+      - name: generate matrix
+        id: generate-matrix
+        uses: ./go/src/open-cluster-management.io/lab/.github/actions/generate-repo-matrix
+        with:
+          repoRoot: go/src/open-cluster-management.io/lab
     outputs:
       MAJOR_RELEASE_VERSION: ${{ env.MAJOR_RELEASE_VERSION }}
       RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+      MATRIX: ${{ steps.generate-matrix.outputs.matrix }}
 
   images:
     name: images
@@ -49,7 +56,7 @@ jobs:
     strategy:
       matrix:
         arch: [ amd64, arm64 ]
-        repository: [ fleetconfig-controller ]
+        repository: ${{ fromJson(needs.env.outputs.MATRIX).repository }}
     steps:
       - name: checkout code
         uses: actions/checkout@v4
@@ -88,7 +95,7 @@ jobs:
     needs: [ env, images ]
     strategy:
       matrix:
-        repository: [ fleetconfig-controller ]
+        repository: ${{ fromJson(needs.env.outputs.MATRIX).repository }}
     steps:
       - name: checkout code
         uses: actions/checkout@v4

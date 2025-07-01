@@ -18,6 +18,8 @@ _build/
 coverage.*
 *.coverprofile
 profile.cov
+*hub-bundle*.tar.gz
+*spoke-bundle*.tar.gz
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
