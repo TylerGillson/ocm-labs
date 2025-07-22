@@ -1,16 +1,26 @@
 package v1alpha1
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"reflect"
+	"slices"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // allowFleetConfigUpdate validates the FleetConfig update object to determine if the update action is valid.
 // Only the following updates are allowed:
+//   - spec.addOnConfig
 //   - spec.registrationAuth.*
 //   - spec.hub.clusterManager.source.*
 //   - spec.spokes[*].klusterlet.source.*
+//   - spec.spokes[*].addOns
 func allowFleetConfigUpdate(newObject *FleetConfig, oldObject *FleetConfig) error {
 
 	// Hub check
@@ -54,4 +64,41 @@ func allowFleetConfigUpdate(newObject *FleetConfig, oldObject *FleetConfig) erro
 	}
 
 	return nil
+}
+
+func validateAddonConfigs(ctx context.Context, client client.Client, newObject *FleetConfig) field.ErrorList {
+	errs := field.ErrorList{}
+	for i, a := range newObject.Spec.AddOnConfigs {
+		cm := corev1.ConfigMap{}
+		cmName := fmt.Sprintf("%s-%s-%s", AddonConfigMapNamePrefix, a.Name, a.Version)
+		err := client.Get(ctx, types.NamespacedName{Name: cmName, Namespace: newObject.Namespace}, &cm)
+		if err != nil {
+			errs = append(errs, field.InternalError(field.NewPath("addOnConfigs").Index(i), err))
+		}
+		// Extract manifest configuration from ConfigMap
+		_, hasRaw := cm.Data[AddonConfigMapManifestRawKey]
+		manifestsURL, hasURL := cm.Data[AddonConfigMapManifestURLKey]
+
+		// Validate manifest configuration
+		if !hasRaw && !hasURL {
+			// return fmt.Errorf("no inline manifests or URL found for addon %s version %s", a.Name, a.Version)
+			errs = append(errs, field.Invalid(field.NewPath("addOnConfigs").Index(i), a.Name, fmt.Sprintf("no inline manifests or URL found for addon %s version %s", a.Name, a.Version)))
+		}
+		if hasRaw && hasURL {
+			errs = append(errs, field.Invalid(field.NewPath("addOnConfigs").Index(i), a.Name, fmt.Sprintf("only 1 of inline manifests or URL can be set for addon %s version %s", a.Name, a.Version)))
+		}
+
+		if hasURL {
+			url, err := url.Parse(manifestsURL)
+			if err != nil {
+				errs = append(errs, field.Invalid(field.NewPath("addOnConfigs").Index(i), a.Name, fmt.Sprintf("invalid URL '%s' for addon %s version %s. %v", manifestsURL, a.Name, a.Version, err.Error())))
+				continue
+			}
+			if !slices.Contains(AllowedAddonURLSchemes, url.Scheme) {
+				errs = append(errs, field.Invalid(field.NewPath("addOnConfigs").Index(i), a.Name, fmt.Sprintf("unsupported URL scheme %s for addon %s version %s. Must be one of %v", manifestsURL, a.Name, a.Version, AllowedAddonURLSchemes)))
+			}
+		}
+	}
+
+	return errs
 }

@@ -62,3 +62,18 @@ const (
 	// AWSIRSARegistrationDriver is the AWS IAM Role for Service Accounts (IRSA) registration driver.
 	AWSIRSARegistrationDriver = "awsirsa"
 )
+
+// Addon ConfigMap constants
+const (
+	// AddonConfigMapNamePrefix is the common name prefix for all configmaps containing addon configurations.
+	AddonConfigMapNamePrefix = "fleet-addon"
+
+	// AddonConfigMapManifestRawKey is the data key containing raw manifests.
+	AddonConfigMapManifestRawKey = "manifestsRaw"
+
+	// AddonConfigMapManifestRawKey is the data key containing a URL to download manifests.
+	AddonConfigMapManifestURLKey = "manifestsURL"
+)
+
+// AllowedAddonURLSchemes are the URL schemes which can be used to provide manifests for configuring addons.
+var AllowedAddonURLSchemes = []string{"http", "https"}

@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	addonapi "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterapi "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorapi "open-cluster-management.io/api/client/operator/clientset/versioned"
 	workapi "open-cluster-management.io/api/client/work/clientset/versioned"
@@ -56,6 +57,19 @@ func WorkClient(kubeconfig []byte) (*workapi.Clientset, error) {
 		return nil, fmt.Errorf("failed to create ocm work client: %w", err)
 	}
 	return workC, nil
+}
+
+// AddOnClient creates an OCM addon v1 client.
+func AddOnClient(kubeconfig []byte) (*addonapi.Clientset, error) {
+	rc, err := kube.RestConfigFromKubeconfig(kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+	addonC, err := addonapi.NewForConfig(rc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ocm addon client: %w", err)
+	}
+	return addonC, nil
 }
 
 // GetManagedCluster retrieves a ManagedCluster resource from the Hub cluster for a particular Spoke cluster.

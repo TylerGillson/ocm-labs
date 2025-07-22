@@ -913,6 +913,10 @@ k8s.io/utils/ptr
 k8s.io/utils/trace
 # open-cluster-management.io/api v0.16.2
 ## explicit; go 1.22.0
+open-cluster-management.io/api/addon/v1alpha1
+open-cluster-management.io/api/client/addon/clientset/versioned
+open-cluster-management.io/api/client/addon/clientset/versioned/scheme
+open-cluster-management.io/api/client/addon/clientset/versioned/typed/addon/v1alpha1
 open-cluster-management.io/api/client/cluster/clientset/versioned
 open-cluster-management.io/api/client/cluster/clientset/versioned/scheme
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1

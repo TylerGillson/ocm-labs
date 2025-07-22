@@ -42,6 +42,10 @@ func handleHub(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetCon
 	if err != nil {
 		return err
 	}
+	addonC, err := common.AddOnClient(hubKubeconfig)
+	if err != nil {
+		return err
+	}
 	cm, err := getClusterManager(ctx, operatorC)
 	if err != nil {
 		return err
@@ -76,6 +80,14 @@ func handleHub(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetCon
 		if err := initializeHub(ctx, kClient, fc); err != nil {
 			return err
 		}
+	}
+
+	err = handleAddonConfig(ctx, kClient, addonC, fc)
+	if err != nil {
+		fc.SetConditions(true, v1alpha1.NewCondition(
+			err.Error(), v1alpha1.FleetConfigHubInitialized, metav1.ConditionFalse, metav1.ConditionTrue,
+		))
+		return err
 	}
 
 	fc.SetConditions(true, v1alpha1.NewCondition(
