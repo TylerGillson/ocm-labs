@@ -105,10 +105,9 @@ func initializeHub(ctx context.Context, kClient client.Client, fc *v1alpha1.Flee
 		"--wait=true",
 	}
 
-	registrationDriver := fc.Spec.RegistrationAuth.GetDriver()
-	if registrationDriver == v1alpha1.AWSIRSARegistrationDriver {
+	if fc.Spec.RegistrationAuth.Driver == v1alpha1.AWSIRSARegistrationDriver {
 		raArgs := []string{
-			fmt.Sprintf("--registration-drivers=%s", registrationDriver),
+			fmt.Sprintf("--registration-drivers=%s", fc.Spec.RegistrationAuth.Driver),
 		}
 		if fc.Spec.RegistrationAuth.HubClusterARN != "" {
 			raArgs = append(raArgs, fmt.Sprintf("--hub-cluster-arn=%s", fc.Spec.RegistrationAuth.HubClusterARN))
@@ -119,31 +118,32 @@ func initializeHub(ctx context.Context, kClient client.Client, fc *v1alpha1.Flee
 		initArgs = append(initArgs, raArgs...)
 	}
 
-	// hub.clusterManager defaults to an empty object so check singleton control plane first
-	if fc.Spec.Hub.SingletonControlPlane != nil && fc.Spec.Hub.SingletonControlPlane.Name != "" {
+	if fc.Spec.Hub.SingletonControlPlane != nil {
 		initArgs = append(initArgs, "--singleton=true")
 		initArgs = append(initArgs, "--singleton-name", fc.Spec.Hub.SingletonControlPlane.Name)
-		if fc.Spec.Hub.SingletonControlPlane.Helm.Values != "" {
-			values, cleanupValues, err := file.TmpFile([]byte(fc.Spec.Hub.SingletonControlPlane.Helm.Values), "values")
-			if cleanupValues != nil {
-				defer cleanupValues()
+		if fc.Spec.Hub.SingletonControlPlane.Helm != nil {
+			if fc.Spec.Hub.SingletonControlPlane.Helm.Values != "" {
+				values, cleanupValues, err := file.TmpFile([]byte(fc.Spec.Hub.SingletonControlPlane.Helm.Values), "values")
+				if cleanupValues != nil {
+					defer cleanupValues()
+				}
+				if err != nil {
+					return err
+				}
+				initArgs = append(initArgs, "--values", values)
 			}
-			if err != nil {
-				return err
+			for _, s := range fc.Spec.Hub.SingletonControlPlane.Helm.Set {
+				initArgs = append(initArgs, "--set", s)
 			}
-			initArgs = append(initArgs, "--values", values)
-		}
-		for _, s := range fc.Spec.Hub.SingletonControlPlane.Helm.Set {
-			initArgs = append(initArgs, "--set", s)
-		}
-		for _, s := range fc.Spec.Hub.SingletonControlPlane.Helm.SetJSON {
-			initArgs = append(initArgs, "--set-json", s)
-		}
-		for _, s := range fc.Spec.Hub.SingletonControlPlane.Helm.SetLiteral {
-			initArgs = append(initArgs, "--set-literal", s)
-		}
-		for _, s := range fc.Spec.Hub.SingletonControlPlane.Helm.SetString {
-			initArgs = append(initArgs, "--set-string", s)
+			for _, s := range fc.Spec.Hub.SingletonControlPlane.Helm.SetJSON {
+				initArgs = append(initArgs, "--set-json", s)
+			}
+			for _, s := range fc.Spec.Hub.SingletonControlPlane.Helm.SetLiteral {
+				initArgs = append(initArgs, "--set-literal", s)
+			}
+			for _, s := range fc.Spec.Hub.SingletonControlPlane.Helm.SetString {
+				initArgs = append(initArgs, "--set-string", s)
+			}
 		}
 	} else if fc.Spec.Hub.ClusterManager != nil {
 		// clustermanager args
@@ -152,10 +152,10 @@ func initializeHub(ctx context.Context, kClient client.Client, fc *v1alpha1.Flee
 		// source args
 		initArgs = append(initArgs, "--bundle-version", fc.Spec.Hub.ClusterManager.Source.BundleVersion)
 		initArgs = append(initArgs, "--image-registry", fc.Spec.Hub.ClusterManager.Source.Registry)
-		if fc.Spec.Hub.ClusterManager.Resources != nil {
-			initArgs = append(initArgs, common.PrepareResources(*fc.Spec.Hub.ClusterManager.Resources)...)
-		}
+		// resources args
+		initArgs = append(initArgs, common.PrepareResources(fc.Spec.Hub.ClusterManager.Resources)...)
 	} else {
+		// one of clusterManager or singletonControlPlane must be specified, per validating webhook, but handle the edge case anyway
 		return fmt.Errorf("unknown hub type, must specify either hub.clusterManager or hub.singletonControlPlane")
 	}
 

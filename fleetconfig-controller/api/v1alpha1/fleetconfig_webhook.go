@@ -56,14 +56,12 @@ var _ webhook.CustomDefaulter = &FleetConfigCustomDefaulter{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the Kind FleetConfig.
 func (d *FleetConfigCustomDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	fleetconfig, ok := obj.(*FleetConfig)
+	fc, ok := obj.(*FleetConfig)
 
 	if !ok {
 		return fmt.Errorf("expected an FleetConfig object but got %T", obj)
 	}
-	log.Info("Defaulting for FleetConfig", "name", fleetconfig.GetName())
-
-	// TODO(user): fill in your defaulting logic.
+	log.Info("Defaulting for FleetConfig", "name", fc.GetName())
 
 	return nil
 }
@@ -96,17 +94,24 @@ func (v *FleetConfigCustomValidator) ValidateCreate(_ context.Context, obj runti
 		warnings admission.Warnings
 	)
 
+	// hub
 	if valid, msg := isKubeconfigValid(fc.Spec.Hub.Kubeconfig); !valid {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("hub"), fc.Spec.Hub.Kubeconfig, msg),
 		)
 	}
+	if fc.Spec.Hub.ClusterManager == nil && fc.Spec.Hub.SingletonControlPlane == nil {
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("hub"), fc.Spec.Hub, "either hub.clusterManager or hub.singletonControlPlane must be specified"),
+		)
+	}
 
+	// spokes
 	for i, spoke := range fc.Spec.Spokes {
 		if spoke.Klusterlet.Mode == string(operatorv1.InstallModeHosted) {
-			if spoke.Klusterlet.ManagedClusterKubeconfig == nil {
+			if spoke.Klusterlet.ManagedClusterKubeconfig.SecretReference == nil {
 				allErrs = append(allErrs, field.Invalid(
-					field.NewPath("spokes").Index(i), fc.Spec.Spokes, "managedClusterKubeconfig is required in hosted mode"),
+					field.NewPath("spokes").Index(i), fc.Spec.Spokes, "managedClusterKubeconfig.secretReference is required in hosted mode"),
 				)
 			} else {
 				if valid, msg := isKubeconfigValid(spoke.Klusterlet.ManagedClusterKubeconfig); !valid {
@@ -130,7 +135,7 @@ func (v *FleetConfigCustomValidator) ValidateCreate(_ context.Context, obj runti
 	return warnings, nil
 }
 
-func isKubeconfigValid(kubeconfig *Kubeconfig) (bool, string) {
+func isKubeconfigValid(kubeconfig Kubeconfig) (bool, string) {
 	if kubeconfig.SecretReference == nil && !kubeconfig.InCluster {
 		return false, "either secretReference or inCluster must be specified for the kubeconfig"
 	}

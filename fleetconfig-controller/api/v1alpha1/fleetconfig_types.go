@@ -26,10 +26,15 @@ import (
 
 // FleetConfigSpec defines the desired state of FleetConfig.
 type FleetConfigSpec struct {
-	Hub              Hub               `json:"hub"`
-	Spokes           []Spoke           `json:"spokes"`
-	RegistrationAuth *RegistrationAuth `json:"registrationAuth,omitempty"`
-	AddOnConfigs     []*AddOnConfig    `json:"addOnConfigs,omitempty"`
+	// +required
+	Hub Hub `json:"hub"`
+	// +required
+	Spokes []Spoke `json:"spokes"`
+	// +kubebuilder:default:={}
+	// +optional
+	RegistrationAuth RegistrationAuth `json:"registrationAuth,omitempty"`
+	// +optional
+	AddOnConfigs []AddOnConfig `json:"addOnConfigs,omitempty"`
 }
 
 // FleetConfigStatus defines the observed state of FleetConfig.
@@ -143,56 +148,68 @@ func (c Condition) Equal(other Condition) bool {
 // Hub provides specifications for an OCM hub cluster.
 type Hub struct {
 	// ClusterManager configuration.
-	// +kubebuilder:default:={}
+	// +optional
 	ClusterManager *ClusterManager `json:"clusterManager,omitempty"`
 
 	// If true, create open-cluster-management namespace, otherwise use existing one.
 	// +kubebuilder:default:=true
-	CreateNamespace bool `json:"createNamespace"`
+	// +optional
+	CreateNamespace bool `json:"createNamespace,omitempty"`
 
 	// If set, the hub will be reinitialized.
+	// +optional
 	Force bool `json:"force,omitempty"`
 
 	// Kubeconfig details for the Hub cluster.
-	Kubeconfig *Kubeconfig `json:"kubeconfig"`
+	// +required
+	Kubeconfig Kubeconfig `json:"kubeconfig"`
 
 	// Singleton control plane configuration. If provided, deploy a singleton control plane instead of clustermanager.
 	// This is an alpha stage flag.
+	// +optional
 	SingletonControlPlane *SingletonControlPlane `json:"singleton,omitempty"`
 
 	// APIServer is the API server URL for the Hub cluster. If provided, the hub will be joined
 	// using this API server instead of the one in the obtained kubeconfig. This is useful when
 	// using in-cluster kubeconfig when that kubeconfig would return an incorrect API server URL.
-	APIServer *string `json:"apiServer,omitempty"`
+	// +optional
+	APIServer string `json:"apiServer,omitempty"`
 }
 
 // SingletonControlPlane is the configuration for a singleton control plane
 type SingletonControlPlane struct {
 	// The name of the singleton control plane.
 	// +kubebuilder:default:="singleton-controlplane"
-	Name string `json:"name"`
+	// +optional
+	Name string `json:"name,omitempty"`
 
 	// Helm configuration for the multicluster-controlplane Helm chart.
 	// For now https://open-cluster-management.io/helm-charts/ocm/multicluster-controlplane is always used - no private registry support.
 	// See: https://github.com/open-cluster-management-io/multicluster-controlplane/blob/main/charts/multicluster-controlplane/values.yaml
-	Helm Helm `json:"helm"`
+	// +optional
+	Helm *Helm `json:"helm,omitempty"`
 }
 
 // Helm is the configuration for helm.
 type Helm struct {
 	// Raw, YAML-formatted Helm values.
+	// +optional
 	Values string `json:"values,omitempty"`
 
 	// Comma-separated Helm values, e.g., key1=val1,key2=val2.
+	// +optional
 	Set []string `json:"set,omitempty"`
 
 	// Comma-separated Helm JSON values, e.g., key1=jsonval1,key2=jsonval2.
+	// +optional
 	SetJSON []string `json:"setJson,omitempty"`
 
 	// Comma-separated Helm literal STRING values.
+	// +optional
 	SetLiteral []string `json:"setLiteral,omitempty"`
 
 	// Comma-separated Helm STRING values, e.g., key1=val1,key2=val2.
+	// +optional
 	SetString []string `json:"setString,omitempty"`
 }
 
@@ -211,21 +228,27 @@ type ClusterManager struct {
 	//  - ResourceCleanup (BETA - default=true)
 	//  - V1beta1CSRAPICompatibility (ALPHA - default=false)
 	// +kubebuilder:default:="AddonManagement=true"
+	// +optional
 	FeatureGates string `json:"featureGates,omitempty"`
 
 	// If set, the cluster manager operator will be purged and the open-cluster-management namespace deleted
 	// when the FleetConfig CR is deleted.
 	// +kubebuilder:default:=true
+	// +optional
 	PurgeOperator bool `json:"purgeOperator,omitempty"`
 
 	// Resource specifications for all clustermanager-managed containers.
-	Resources *ResourceSpec `json:"resources,omitempty"`
+	// +kubebuilder:default:={}
+	// +optional
+	Resources ResourceSpec `json:"resources,omitempty"`
 
 	// Version and image registry details for the cluster manager.
 	// +kubebuilder:default:={}
-	Source *OCMSource `json:"source,omitempty"`
+	// +optional
+	Source OCMSource `json:"source,omitempty"`
 
 	// If set, the bootstrap token will used instead of a service account token.
+	// +optional
 	UseBootstrapToken bool `json:"useBootstrapToken,omitempty"`
 }
 
@@ -234,10 +257,12 @@ type OCMSource struct {
 	// The version of predefined compatible image versions (e.g. v0.6.0). Defaults to the latest released version.
 	// You can also set "latest" to install the latest development version.
 	// +kubebuilder:default:="default"
+	// +optional
 	BundleVersion string `json:"bundleVersion,omitempty"`
 
 	// The name of the image registry serving OCM images, which will be used for all OCM components."
 	// +kubebuilder:default:="quay.io/open-cluster-management"
+	// +optional
 	Registry string `json:"registry,omitempty"`
 }
 
@@ -256,21 +281,24 @@ type Kubeconfig struct {
 	InCluster bool `json:"inCluster,omitempty"`
 
 	// The context to use in the kubeconfig file.
+	// +optional
 	Context string `json:"context,omitempty"`
 }
 
 // SecretReference describes how to retrieve a kubeconfig stored as a secret
 type SecretReference struct {
 	// The name of the secret.
+	// +required
 	Name string `json:"name"`
 
 	// The namespace the secret is in.
+	// +required
 	Namespace string `json:"namespace"`
 
-	// The map key to access the kubeconfig.
-	// Leave empty to use 'kubeconfig'.
+	// The map key to access the kubeconfig. Defaults to 'kubeconfig'.
+	// +kubebuilder:default:="kubeconfig"
 	// +optional
-	KubeconfigKey *string `json:"kubeconfigKey,omitempty"`
+	KubeconfigKey string `json:"kubeconfigKey,omitempty"`
 }
 
 // Spoke provides specifications for joining and potentially upgrading spokes.
@@ -278,49 +306,62 @@ type Spoke struct {
 	// The name of the spoke cluster.
 	// +kubebuilder:validation:MaxLength=63
 	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+	// +required
 	Name string `json:"name"`
 
 	// If true, create open-cluster-management namespace and agent namespace (open-cluster-management-agent for Default mode,
 	// <klusterlet-name> for Hosted mode), otherwise use existing one.
 	// +kubebuilder:default:=true
-	CreateNamespace bool `json:"createNamespace"`
+	// +optional
+	CreateNamespace bool `json:"createNamespace,omitempty"`
 
 	// If true, sync the labels from klusterlet to all agent resources.
+	// +optional
 	SyncLabels bool `json:"syncLabels,omitempty"`
 
 	// Kubeconfig details for the Spoke cluster.
-	Kubeconfig *Kubeconfig `json:"kubeconfig"`
+	// +required
+	Kubeconfig Kubeconfig `json:"kubeconfig"`
 
 	// Hub cluster CA certificate, optional
+	// +optional
 	Ca string `json:"ca,omitempty"`
 
 	// Proxy CA certificate, optional
+	// +optional
 	ProxyCa string `json:"proxyCa,omitempty"`
 
 	// URL of a forward proxy server used by agents to connect to the Hub cluster.
+	// +optional
 	ProxyURL string `json:"proxyUrl,omitempty"`
 
 	// Klusterlet configuration.
 	// +kubebuilder:default:={}
+	// +optional
 	Klusterlet Klusterlet `json:"klusterlet,omitempty"`
 
 	// ClusterARN is the ARN of the spoke cluster.
 	// This field is optionally used for AWS IRSA registration authentication.
+	// +optional
 	ClusterARN string `json:"clusterARN,omitempty"`
 
 	// AddOns are the add-ons to enable for the spoke cluster.
+	// +optional
 	AddOns []AddOn `json:"addOns,omitempty"`
 }
 
 // AddOn enables add-on installation on the cluster.
 type AddOn struct {
 	// The name of the add-on being enabled. Must match one of the default or manually configured add-on names.
+	// +required
 	ConfigName string `json:"configName"`
 
 	// The namespace to install the add-on in. If left empty, installs into the "open-cluster-management-addon" namespace.
+	// +optional
 	InstallNamespace string `json:"installNamespace,omitempty"`
 
-	// Optional annotations to apply to the add-on.
+	// Annotations to apply to the add-on.
+	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
@@ -343,11 +384,12 @@ type JoinedSpoke struct {
 	Name string `json:"name"`
 
 	// Kubeconfig details for the Spoke cluster.
-	Kubeconfig *Kubeconfig `json:"kubeconfig"`
+	Kubeconfig Kubeconfig `json:"kubeconfig"`
 
 	// If set, the klusterlet operator will be purged and all open-cluster-management namespaces deleted
 	// when the klusterlet is unjoined from its Hub cluster.
 	// +kubebuilder:default:=true
+	// +optional
 	PurgeKlusterletOperator bool `json:"purgeKlusterletOperator,omitempty"`
 }
 
@@ -381,62 +423,77 @@ type Klusterlet struct {
 	//  - RawFeedbackJsonString (ALPHA - default=false)
 	//  - V1beta1CSRAPICompatibility (ALPHA - default=false)
 	// +kubebuilder:default:="AddonManagement=true,ClusterClaim=true"
+	// +optional
 	FeatureGates string `json:"featureGates,omitempty"`
 
 	// Deployent mode for klusterlet
 	// +kubebuilder:validation:Enum=Default;Hosted
 	// +kubebuilder:default:="Default"
+	// +optional
 	Mode string `json:"mode,omitempty"`
 
 	// If set, the klusterlet operator will be purged and all open-cluster-management namespaces deleted
 	// when the klusterlet is unjoined from its Hub cluster.
 	// +kubebuilder:default:=true
+	// +optional
 	PurgeOperator bool `json:"purgeOperator,omitempty"`
 
 	// If true, the installed klusterlet agent will start the cluster registration process by looking for the
 	// internal endpoint from the public cluster-info in the Hub cluster instead of using hubApiServer.
+	// +optional
 	ForceInternalEndpointLookup bool `json:"forceInternalEndpointLookup,omitempty"`
 
 	// External managed cluster kubeconfig, required if using hosted mode.
-	ManagedClusterKubeconfig *Kubeconfig `json:"managedClusterKubeconfig,omitempty"`
+	// +optional
+	ManagedClusterKubeconfig Kubeconfig `json:"managedClusterKubeconfig,omitempty"`
 
 	// If true, the klusterlet accesses the managed cluster using the internal endpoint from the public
 	// cluster-info in the managed cluster instead of using managedClusterKubeconfig.
+	// +optional
 	ForceInternalEndpointLookupManaged bool `json:"forceInternalEndpointLookupManaged,omitempty"`
 
 	// Resource specifications for all klusterlet-managed containers.
-	Resources *ResourceSpec `json:"resources,omitempty"`
+	// +kubebuilder:default:={}
+	// +optional
+	Resources ResourceSpec `json:"resources,omitempty"`
 
 	// If true, deploy klusterlet in singleton mode, with registration and work agents running in a single pod.
 	// This is an alpha stage flag.
+	// +optional
 	Singleton bool `json:"singleton,omitempty"`
 
 	// Version and image registry details for the klusterlet.
 	// +kubebuilder:default:={}
-	Source *OCMSource `json:"source,omitempty"`
+	// +optional
+	Source OCMSource `json:"source,omitempty"`
 }
 
 // ResourceSpec defines resource limits and requests for all managed clusters.
 type ResourceSpec struct {
 	// The resource limits of all the containers managed by the Cluster Manager or Klusterlet operators.
-	Limits ResourceValues `json:"limits,omitempty"`
+	// +optional
+	Limits *ResourceValues `json:"limits,omitempty"`
 
 	// The resource requests of all the containers managed by the Cluster Manager or Klusterlet operators.
-	Requests ResourceValues `json:"requests,omitempty"`
+	// +optional
+	Requests *ResourceValues `json:"requests,omitempty"`
 
 	// The resource QoS class of all the containers managed by the Cluster Manager or Klusterlet operators.
 	// One of Default, BestEffort or ResourceRequirement.
 	// +kubebuilder:validation:Enum=Default;BestEffort;ResourceRequirement
 	// +kubebuilder:default:="Default"
-	QosClass string `json:"qosClass"`
+	// +optional
+	QosClass string `json:"qosClass,omitempty"`
 }
 
 // ResourceValues detail container resource constraints.
 type ResourceValues struct {
 	// The number of CPU units to request, e.g., '800m'.
+	// +optional
 	CPU string `json:"cpu,omitempty"`
 
 	// The amount of memory to request, e.g., '8Gi'.
+	// +optional
 	Memory string `json:"memory,omitempty"`
 }
 
@@ -461,24 +518,28 @@ type RegistrationAuth struct {
 	// The set of valid options is open for extension.
 	// +kubebuilder:validation:Enum=csr;awsirsa
 	// +kubebuilder:default:="csr"
-	Driver string `json:"driver"`
+	// +optional
+	Driver string `json:"driver,omitempty"`
 
 	// The Hub cluster ARN for awsirsa registration authentication. Required when Type is awsirsa, otherwise ignored.
+	// +optional
 	HubClusterARN string `json:"hubClusterARN,omitempty"`
 
 	// List of AWS EKS ARN patterns so any EKS clusters with these patterns will be auto accepted to join with hub cluster.
 	// Example pattern: "arn:aws:eks:us-west-2:123456789013:cluster/.*"
+	// +optional
 	AutoApprovedARNPatterns []string `json:"autoApprovedARNPatterns,omitempty"`
 }
 
 // AddOnConfig is the configuration of a custom AddOn that can be installed on a cluster.
 type AddOnConfig struct {
 	// The name of the add-on.
+	// +required
 	Name string `json:"name"`
 
 	// The add-on version. Optional, defaults to "v0.0.1"
-	// +optional
 	// +kubebuilder:default:="v0.0.1"
+	// +optional
 	Version string `json:"version,omitempty"`
 
 	// The rolebinding to the clusterrole in the cluster namespace for the addon agent
@@ -486,13 +547,13 @@ type AddOnConfig struct {
 	ClusterRoleBinding string `json:"clusterRoleBinding,omitempty"`
 
 	// Enable the agent to register to the hub cluster. Optional, defaults to false.
-	// +optional
 	// +kubebuilder:default:=false
+	// +optional
 	HubRegistration bool `json:"hubRegistration,omitempty"`
 
 	// Whether to overwrite the add-on if it already exists. Optional, defaults to false.
-	// +optional
 	// +kubebuilder:default:=false
+	// +optional
 	Overwrite bool `json:"overwrite,omitempty"`
 }
 
@@ -508,15 +569,6 @@ type FleetConfig struct {
 
 	Spec   FleetConfigSpec   `json:"spec,omitempty"`
 	Status FleetConfigStatus `json:"status,omitempty"`
-}
-
-// GetDriver returns the registration auth type, defaults to csr.
-func (ra *RegistrationAuth) GetDriver() string {
-	if ra == nil {
-		// default registration auth type
-		return CSRRegistrationDriver
-	}
-	return ra.Driver
 }
 
 // GetCondition gets the condition with the supplied type, if it exists.
