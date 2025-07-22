@@ -138,12 +138,12 @@ func (r *FleetConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	// Handle Hub cluster: initialization and/or upgrade
-	hubInitializedCond := fc.GetCondition(v1alpha1.FleetConfigHubInitialized)
 	if err := handleHub(ctx, r.Client, fc); err != nil {
 		logger.Error(err, "Failed to handle hub operations")
 		fc.Status.Phase = v1alpha1.FleetConfigUnhealthy
 	}
-	if hubInitializedCond.Status == metav1.ConditionFalse {
+	hubInitializedCond := fc.GetCondition(v1alpha1.FleetConfigHubInitialized)
+	if hubInitializedCond == nil || hubInitializedCond.Status == metav1.ConditionFalse {
 		return ret(ctx, ctrl.Result{Requeue: true}, nil)
 	}
 
