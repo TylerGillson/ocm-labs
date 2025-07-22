@@ -28,6 +28,7 @@ import (
 	kerrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 
 	"github.com/open-cluster-management-io/lab/fleetconfig-controller/api/v1alpha1"
 	"github.com/open-cluster-management-io/lab/fleetconfig-controller/pkg/common"
@@ -70,6 +71,23 @@ var _ = Describe("fleetconfig", Label("fleetconfig"), Ordered, func() {
 			By("cloning the FleetConfig resource for further scenarios")
 			err := utils.CloneFleetConfig(fc, fcClone)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should verify spoke cluster annotations", func() {
+			EventuallyWithOffset(1, func() error {
+				klusterlet := &operatorv1.Klusterlet{}
+				if err := tc.kClientSpoke.Get(tc.ctx, klusterletNN, klusterlet); err != nil {
+					return err
+				}
+				v, ok := klusterlet.Spec.RegistrationConfiguration.ClusterAnnotations["agent.open-cluster-management.io/foo"]
+				if !ok {
+					return fmt.Errorf("expected annotation, agent.open-cluster-management.io/foo, not found")
+				}
+				if v != "bar" {
+					return fmt.Errorf("expected agent.open-cluster-management.io/foo=bar, got %s", v)
+				}
+				return nil
+			}, 1*time.Minute, 1*time.Second).Should(Succeed())
 		})
 
 		It("should successfully create a namespace in the hub-as-spoke cluster", func() {

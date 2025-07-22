@@ -269,6 +269,10 @@ func joinSpoke(ctx context.Context, kClient client.Client, spec v1alpha1.FleetCo
 		"--image-registry", spoke.Klusterlet.Source.Registry,
 	}
 
+	for k, v := range spoke.Klusterlet.Annotations {
+		joinArgs = append(joinArgs, fmt.Sprintf("--klusterlet-annotation=%s=%s", k, v))
+	}
+
 	// Use hub API server from spec if provided, otherwise fall back to tokenMeta
 	if spec.Hub.APIServer != nil {
 		joinArgs = append(joinArgs, "--hub-apiserver", *spec.Hub.APIServer)

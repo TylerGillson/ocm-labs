@@ -21,6 +21,7 @@ import (
 
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
 	clusterv1beta2 "open-cluster-management.io/api/cluster/v1beta2"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 	workv1 "open-cluster-management.io/api/work/v1"
 
 	"github.com/open-cluster-management-io/lab/fleetconfig-controller/api/v1alpha1"
@@ -45,6 +46,7 @@ var (
 
 	// global test variables
 	fleetConfigNN = ktypes.NamespacedName{Name: "fleetconfig", Namespace: fcNamespace}
+	klusterletNN  = ktypes.NamespacedName{Name: "klusterlet"}
 )
 
 // E2EContext holds all the test-specific state.
@@ -121,6 +123,7 @@ func setupTestEnvironment() *E2EContext {
 	Expect(v1alpha1.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(clusterv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(clusterv1beta2.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(operatorv1.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(workv1.AddToScheme(scheme.Scheme)).To(Succeed())
 
 	By("creating a kubernetes client for the hub cluster")

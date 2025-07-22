@@ -21,6 +21,8 @@ fleetConfig:
         namespace: "default"
         kubeconfigKey: "value"
     klusterlet:
+      annotations:
+        foo: "bar"
       mode: "Default"
       purgeOperator: true
       forceInternalEndpointLookup: true

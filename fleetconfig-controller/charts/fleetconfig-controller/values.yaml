@@ -10,6 +10,8 @@
 fleetConfig:
   ## @param fleetConfig.enabled Whether to create a FleetConfig resource.
   enabled: true
+  ## @param fleetConfig.spokeAnnotations Global annotations to apply to all spoke clusters. If not present, the 'agent.open-cluster-management.io/' prefix is added to each key. Each annotation is added to klusterlet.spec.registrationConfiguration.clusterAnnotations on every spoke and subsequently to the ManagedClusters on the hub. Per-spoke annotations take precedence over the global annotations.
+  spokeAnnotations: {}
   ## @descriptionStart
   ## ### Spoke Feature Gates
   ## Uncomment and configure `fleetConfig.spokeFeatureGates` to enable feature gates for the Klusterlet on each Spoke.
@@ -158,6 +160,7 @@ fleetConfig:
   ## @param fleetConfig.spokes[0].ca Hub cluster CA certificate, optional.
   ## @param fleetConfig.spokes[0].proxyCa Proxy CA certificate, optional.
   ## @param fleetConfig.spokes[0].proxyUrl URL of a forward proxy server used by agents to connect to the Hub cluster, optional.
+  ## @param fleetConfig.spokes[0].klusterlet.annotations Annotations to apply to the spoke cluster. If not present, the 'agent.open-cluster-management.io/' prefix is added to each key. Each annotation is added to klusterlet.spec.registrationConfiguration.clusterAnnotations on the spoke and subsequently to the ManagedCluster on the hub. These annotations take precedence over the global spoke annotations.
   ## @param fleetConfig.spokes[0].klusterlet.mode Deployment mode for klusterlet. Options: Default (agents run on spoke cluster) | Hosted (agents run on hub cluster).
   ## @param fleetConfig.spokes[0].klusterlet.purgeOperator If set, the klusterlet operator will be purged and all open-cluster-management namespaces deleted when the klusterlet is unjoined from its Hub cluster.
   ## @param fleetConfig.spokes[0].klusterlet.forceInternalEndpointLookup If true, the klusterlet agent will start the cluster registration process by looking for the
@@ -188,6 +191,7 @@ fleetConfig:
     proxyUrl: ""
     ## Configuration for the Klusterlet on the Spoke cluster.
     klusterlet:
+      annotations: {}
       mode: "Default"
       purgeOperator: true
       # Reference the internal endpoint from the cluster-info ConfigMap in the Hub cluster instead of using the Hub's

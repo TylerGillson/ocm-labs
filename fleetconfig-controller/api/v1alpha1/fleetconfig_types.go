@@ -366,6 +366,11 @@ func (j *JoinedSpoke) conditionName() string {
 
 // Klusterlet is the configuration for a klusterlet.
 type Klusterlet struct {
+	// Annotations to apply to the spoke cluster. If not present, the 'agent.open-cluster-management.io/' prefix is added to each key.
+	// Each annotation is added to klusterlet.spec.registrationConfiguration.clusterAnnotations on the spoke and subsequently to the ManagedCluster on the hub.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
 	// A set of comma-separated pairs of the form 'key1=value1,key2=value2' that describe feature gates for alpha/experimental features.
 	// Options are:
 	//  - AddonManagement (ALPHA - default=true)

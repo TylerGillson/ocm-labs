@@ -49,6 +49,9 @@ spec:
       clusterARN: {{ .clusterARN | quote }}
       {{- end }}
       klusterlet:
+        {{- if or .klusterlet.annotations $.Values.fleetConfig.spokeAnnotations }}
+        annotations: {{- toYaml (merge .klusterlet.annotations $.Values.fleetConfig.spokeAnnotations) | nindent 10 }}
+        {{- end }}
         mode: {{ .klusterlet.mode | quote }}
         purgeOperator: {{ .klusterlet.purgeOperator }}
         featureGates: {{ include "featureGates" (dict "dict" $spokeFeatureGates) | quote }}

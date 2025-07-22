@@ -354,6 +354,13 @@ spec:
                       default: {}
                       description: Klusterlet configuration.
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Annotations to apply to the spoke cluster. If not present, the 'agent.open-cluster-management.io/' prefix is added to each key.
+                            Each annotation is added to klusterlet.spec.registrationConfiguration.clusterAnnotations on the spoke and subsequently to the ManagedCluster on the hub.
+                          type: object
                         featureGates:
                           default: AddonManagement=true,ClusterClaim=true
                           description: |-
