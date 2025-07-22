@@ -30,8 +30,8 @@ spec:
         bundleVersion: {{ .Values.fleetConfig.source.bundleVersion }}
         registry: {{ .Values.fleetConfig.source.registry }}
     {{- end }}
-    {{- if .Values.fleetConfig.hub.singleton }}
-    singleton: {{- toYaml .Values.fleetConfig.hub.singleton | nindent 6 }}
+    {{- if .Values.fleetConfig.hub.singletonControlPlane }}
+    singleton: {{- toYaml .Values.fleetConfig.hub.singletonControlPlane | nindent 6 }}
     {{- end }}
     createNamespace: {{ .Values.fleetConfig.hub.createNamespace }}
     force: {{ .Values.fleetConfig.hub.force }}
