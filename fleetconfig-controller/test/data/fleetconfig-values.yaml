@@ -1,4 +1,7 @@
 fleetConfig:
+  spokeAnnotations:
+    foo: "not-bar"
+    baz: "quux"
   spokes:
   - name: hub-as-spoke
     createNamespace: true

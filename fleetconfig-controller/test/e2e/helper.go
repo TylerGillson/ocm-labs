@@ -30,13 +30,14 @@ import (
 )
 
 const (
-	fcNamespace         = "fleetconfig-system"
-	spokeSecretName     = "test-fleetconfig-kubeconfig"
-	devspaceLocal       = "local"
-	devspaceCI          = "ci"
-	kubeconfigSecretKey = "value"
-	hubAsSpokeName      = v1alpha1.ManagedClusterTypeHubAsSpoke
-	spokeName           = v1alpha1.ManagedClusterTypeSpoke
+	fcNamespace                = "fleetconfig-system"
+	spokeSecretName            = "test-fleetconfig-kubeconfig"
+	klusterletAnnotationPrefix = "agent.open-cluster-management.io"
+	devspaceLocal              = "local"
+	devspaceCI                 = "ci"
+	kubeconfigSecretKey        = "value"
+	hubAsSpokeName             = v1alpha1.ManagedClusterTypeHubAsSpoke
+	spokeName                  = v1alpha1.ManagedClusterTypeSpoke
 )
 
 var (
@@ -330,5 +331,17 @@ func assertNamespace(ctx context.Context, cluster string, kClient client.Client)
 		return errors.New("namespace not found")
 	}
 	utils.Info("Namespace %s is now created in cluster '%s'", namespaceName, cluster)
+	return nil
+}
+
+func assertKlusterletAnnotation(klusterlet *operatorv1.Klusterlet, key, expectedValue string) error {
+	expectedKey := fmt.Sprintf("%s/%s", klusterletAnnotationPrefix, key)
+	v, ok := klusterlet.Spec.RegistrationConfiguration.ClusterAnnotations[expectedKey]
+	if !ok {
+		return fmt.Errorf("expected annotation, %s, not found", expectedKey)
+	}
+	if v != expectedValue {
+		return fmt.Errorf("expected %s=%s, got %s", expectedKey, expectedValue, v)
+	}
 	return nil
 }

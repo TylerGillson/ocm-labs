@@ -79,12 +79,11 @@ var _ = Describe("fleetconfig", Label("fleetconfig"), Ordered, func() {
 				if err := tc.kClientSpoke.Get(tc.ctx, klusterletNN, klusterlet); err != nil {
 					return err
 				}
-				v, ok := klusterlet.Spec.RegistrationConfiguration.ClusterAnnotations["agent.open-cluster-management.io/foo"]
-				if !ok {
-					return fmt.Errorf("expected annotation, agent.open-cluster-management.io/foo, not found")
+				if err := assertKlusterletAnnotation(klusterlet, "foo", "bar"); err != nil {
+					return err
 				}
-				if v != "bar" {
-					return fmt.Errorf("expected agent.open-cluster-management.io/foo=bar, got %s", v)
+				if err := assertKlusterletAnnotation(klusterlet, "baz", "quux"); err != nil {
+					return err
 				}
 				return nil
 			}, 1*time.Minute, 1*time.Second).Should(Succeed())
