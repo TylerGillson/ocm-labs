@@ -53,8 +53,12 @@ spec:
       clusterARN: {{ .clusterARN | quote }}
       {{- end }}
       klusterlet:
-        {{- if or .klusterlet.annotations $.Values.fleetConfig.spokeAnnotations }}
+        {{- if and .klusterlet.annotations $.Values.fleetConfig.spokeAnnotations }}
         annotations: {{- toYaml (merge .klusterlet.annotations $.Values.fleetConfig.spokeAnnotations) | nindent 10 }}
+        {{- else if .klusterlet.annotations }}
+        annotations: {{- toYaml .klusterlet.annotations | nindent 10 }}
+        {{- else if $.Values.fleetConfig.spokeAnnotations }}
+        annotations: {{- toYaml $.Values.fleetConfig.spokeAnnotations | nindent 10 }}
         {{- end }}
         mode: {{ .klusterlet.mode | quote }}
         purgeOperator: {{ .klusterlet.purgeOperator }}
