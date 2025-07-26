@@ -116,6 +116,7 @@ test-unit: manifests generate fmt vet envtest ## Run unit tests.
 		go test -v \
 		-coverpkg=./... \
 		-coverprofile=cover.out \
+		--output-dir=$(COVER_DIR)/unit \
 		$(shell go list ./... | grep -v '/test/e2e')
 
 .PHONY: test-e2e
