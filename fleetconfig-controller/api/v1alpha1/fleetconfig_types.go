@@ -28,13 +28,27 @@ import (
 type FleetConfigSpec struct {
 	// +required
 	Hub Hub `json:"hub"`
+
 	// +required
 	Spokes []Spoke `json:"spokes"`
+
 	// +kubebuilder:default:={}
 	// +optional
-	RegistrationAuth RegistrationAuth `json:"registrationAuth,omitempty"`
+	RegistrationAuth RegistrationAuth `json:"registrationAuth,omitzero"`
+
 	// +optional
 	AddOnConfigs []AddOnConfig `json:"addOnConfigs,omitempty"`
+
+	// Timeout is the timeout in seconds for all clusteradm operations, including init, accept, join, upgrade, etc.
+	// +kubebuilder:default:="300"
+	// +optional
+	Timeout int `json:"timeout,omitempty"`
+
+	// LogVerbosity is the verbosity of the logs.
+	// +kubebuilder:validation:Enum=0;1;2;3;4;5;6;7;8;9;10
+	// +kubebuilder:default:="0"
+	// +optional
+	LogVerbosity int `json:"logVerbosity,omitempty"`
 }
 
 // FleetConfigStatus defines the observed state of FleetConfig.
@@ -244,12 +258,12 @@ type ClusterManager struct {
 	// Resource specifications for all clustermanager-managed containers.
 	// +kubebuilder:default:={}
 	// +optional
-	Resources ResourceSpec `json:"resources,omitempty"`
+	Resources ResourceSpec `json:"resources,omitzero"`
 
 	// Version and image registry details for the cluster manager.
 	// +kubebuilder:default:={}
 	// +optional
-	Source OCMSource `json:"source,omitempty"`
+	Source OCMSource `json:"source,omitzero"`
 
 	// If set, the bootstrap token will used instead of a service account token.
 	// +optional
@@ -338,7 +352,7 @@ type Spoke struct {
 	// Klusterlet configuration.
 	// +kubebuilder:default:={}
 	// +optional
-	Klusterlet Klusterlet `json:"klusterlet,omitempty"`
+	Klusterlet Klusterlet `json:"klusterlet,omitzero"`
 
 	// ClusterARN is the ARN of the spoke cluster.
 	// This field is optionally used for AWS IRSA registration authentication.
@@ -445,7 +459,7 @@ type Klusterlet struct {
 
 	// External managed cluster kubeconfig, required if using hosted mode.
 	// +optional
-	ManagedClusterKubeconfig Kubeconfig `json:"managedClusterKubeconfig,omitempty"`
+	ManagedClusterKubeconfig Kubeconfig `json:"managedClusterKubeconfig,omitzero"`
 
 	// If true, the klusterlet accesses the managed cluster using the internal endpoint from the public
 	// cluster-info in the managed cluster instead of using managedClusterKubeconfig.
@@ -455,7 +469,7 @@ type Klusterlet struct {
 	// Resource specifications for all klusterlet-managed containers.
 	// +kubebuilder:default:={}
 	// +optional
-	Resources ResourceSpec `json:"resources,omitempty"`
+	Resources ResourceSpec `json:"resources,omitzero"`
 
 	// If true, deploy klusterlet in singleton mode, with registration and work agents running in a single pod.
 	// This is an alpha stage flag.
@@ -465,7 +479,7 @@ type Klusterlet struct {
 	// Version and image registry details for the klusterlet.
 	// +kubebuilder:default:={}
 	// +optional
-	Source OCMSource `json:"source,omitempty"`
+	Source OCMSource `json:"source,omitzero"`
 }
 
 // ResourceSpec defines resource limits and requests for all managed clusters.
@@ -565,9 +579,9 @@ type AddOnConfig struct {
 // FleetConfig is the Schema for the fleetconfigs API.
 type FleetConfig struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	Spec   FleetConfigSpec   `json:"spec,omitempty"`
+	Spec   FleetConfigSpec   `json:"spec,omitzero"`
 	Status FleetConfigStatus `json:"status,omitempty"`
 }
 
@@ -586,7 +600,7 @@ func (m *FleetConfig) SetConditions(cover bool, c ...Condition) {
 // FleetConfigList contains a list of FleetConfig.
 type FleetConfigList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []FleetConfig `json:"items"`
 }
 
