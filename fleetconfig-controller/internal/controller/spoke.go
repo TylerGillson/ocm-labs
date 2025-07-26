@@ -87,7 +87,7 @@ func handleSpokes(ctx context.Context, kClient client.Client, fc *v1alpha1.Fleet
 				continue
 			}
 			// run `clusteradm accept` even if auto acceptance is enabled, as it's just a no-op if the spoke is already accepted
-			if err := acceptCluster(ctx, fc, spoke.Name); err != nil {
+			if err := acceptCluster(ctx, fc, spoke.Name, false); err != nil {
 				fc.SetConditions(true, v1alpha1.NewCondition(
 					err.Error(), spoke.JoinType(), metav1.ConditionFalse, metav1.ConditionTrue,
 				))
@@ -110,6 +110,12 @@ func handleSpokes(ctx context.Context, kClient client.Client, fc *v1alpha1.Fleet
 			fc.SetConditions(true, v1alpha1.NewCondition(
 				msg, spoke.JoinType(), metav1.ConditionFalse, metav1.ConditionTrue,
 			))
+			// Re-accept all join requests for the spoke cluster. This is a workaround for the issue
+			// that duplicate CSRs are sometimes created for the same spoke cluster when the klusterlet
+			// controller bounces the klusterlet registration agent.
+			if err := acceptCluster(ctx, fc, spoke.Name, true); err != nil {
+				logger.Error(err, "failed to accept spoke cluster join request(s)", "spoke", spoke.Name)
+			}
 			continue
 		}
 
@@ -187,7 +193,7 @@ func getJoinedCondition(managedCluster *clusterv1.ManagedCluster) *metav1.Condit
 }
 
 // acceptCluster accepts a Spoke cluster's join request via 'clusteradm accept'
-func acceptCluster(ctx context.Context, fc *v1alpha1.FleetConfig, name string) error {
+func acceptCluster(ctx context.Context, fc *v1alpha1.FleetConfig, name string, skipApproveCheck bool) error {
 	logger := log.FromContext(ctx)
 	logger.V(0).Info("acceptCluster")
 
@@ -201,8 +207,9 @@ func acceptCluster(ctx context.Context, fc *v1alpha1.FleetConfig, name string) e
 	// --requesters=[]:
 	//     Common Names of agents to be approved.
 
-	// --skip-approve-check=false:
-	//     If set, then skip check and approve csr directly.
+	if skipApproveCheck {
+		acceptArgs = append(acceptArgs, "--skip-approve-check")
+	}
 
 	cmd := exec.Command(clusteradm, acceptArgs...)
 	stdout, stderr, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm accept' to complete for spoke %s...", name))
