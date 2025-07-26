@@ -552,7 +552,7 @@ spec:
                   type: object
                 type: array
               timeout:
-                default: "300"
+                default: 300
                 description: Timeout is the timeout in seconds for all clusteradm
                   operations, including init, accept, join, upgrade, etc.
                 type: integer
