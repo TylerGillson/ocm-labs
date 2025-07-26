@@ -52,7 +52,7 @@ func handleSpokes(ctx context.Context, kClient client.Client, fc *v1alpha1.Fleet
 		if !slices.ContainsFunc(fc.Spec.Spokes, func(spoke v1alpha1.Spoke) bool {
 			return spoke.Name == js.Name && reflect.DeepEqual(spoke.Kubeconfig, js.Kubeconfig)
 		}) {
-			err = deregisterSpoke(ctx, kClient, hubKubeconfig, &js)
+			err = deregisterSpoke(ctx, kClient, hubKubeconfig, fc, &js)
 			if err != nil {
 				fc.SetConditions(true, v1alpha1.NewCondition(
 					err.Error(), js.UnjoinType(), metav1.ConditionFalse, metav1.ConditionTrue,
@@ -80,14 +80,14 @@ func handleSpokes(ctx context.Context, kClient client.Client, fc *v1alpha1.Fleet
 			if err != nil {
 				return fmt.Errorf("failed to get join token: %w", err)
 			}
-			if err := joinSpoke(ctx, kClient, fc.Spec, spoke, tokenMeta); err != nil {
+			if err := joinSpoke(ctx, kClient, fc, spoke, tokenMeta); err != nil {
 				fc.SetConditions(true, v1alpha1.NewCondition(
 					err.Error(), spoke.JoinType(), metav1.ConditionFalse, metav1.ConditionTrue,
 				))
 				continue
 			}
 			// run `clusteradm accept` even if auto acceptance is enabled, as it's just a no-op if the spoke is already accepted
-			if err := acceptCluster(ctx, spoke.Name); err != nil {
+			if err := acceptCluster(ctx, fc, spoke.Name); err != nil {
 				fc.SetConditions(true, v1alpha1.NewCondition(
 					err.Error(), spoke.JoinType(), metav1.ConditionFalse, metav1.ConditionTrue,
 				))
@@ -148,7 +148,7 @@ func handleSpokes(ctx context.Context, kClient client.Client, fc *v1alpha1.Fleet
 			return fmt.Errorf("failed to check if spoke cluster needs upgrade: %w", err)
 		}
 		if upgrade {
-			if err := upgradeSpoke(ctx, kClient, spoke); err != nil {
+			if err := upgradeSpoke(ctx, kClient, fc, spoke); err != nil {
 				return fmt.Errorf("failed to upgrade spoke cluster %s: %w", spoke.Name, err)
 			}
 		}
@@ -187,11 +187,14 @@ func getJoinedCondition(managedCluster *clusterv1.ManagedCluster) *metav1.Condit
 }
 
 // acceptCluster accepts a Spoke cluster's join request via 'clusteradm accept'
-func acceptCluster(ctx context.Context, name string) error {
+func acceptCluster(ctx context.Context, fc *v1alpha1.FleetConfig, name string) error {
 	logger := log.FromContext(ctx)
 	logger.V(0).Info("acceptCluster")
 
-	acceptArgs := []string{"accept", "--cluster", name}
+	acceptArgs := append([]string{
+		"accept", "--cluster", name,
+	}, fc.BaseArgs()...)
+
 	logger.V(1).Info("clusteradm accept", "args", acceptArgs)
 
 	// TODO: handle other args:
@@ -221,7 +224,10 @@ func getToken(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetConf
 	logger := log.FromContext(ctx)
 	logger.V(0).Info("getToken")
 
-	tokenArgs := []string{"get", "token", "--output=json"}
+	tokenArgs := append([]string{
+		"get", "token", "--output=json",
+	}, fc.BaseArgs()...)
+
 	if fc.Spec.Hub.ClusterManager != nil {
 		tokenArgs = append(tokenArgs, fmt.Sprintf("--use-bootstrap-token=%t", fc.Spec.Hub.ClusterManager.UseBootstrapToken))
 	}
@@ -232,6 +238,7 @@ func getToken(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetConf
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare kubeconfig: %w", err)
 	}
+
 	logger.V(1).Info("clusteradm get token", "args", tokenArgs)
 
 	cmd := exec.Command(clusteradm, tokenArgs...)
@@ -249,11 +256,12 @@ func getToken(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetConf
 }
 
 // joinSpoke joins a Spoke cluster to the Hub cluster via 'clusteradm join'
-func joinSpoke(ctx context.Context, kClient client.Client, spec v1alpha1.FleetConfigSpec, spoke v1alpha1.Spoke, tokenMeta *tokenMeta) error {
+func joinSpoke(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetConfig, spoke v1alpha1.Spoke, tokenMeta *tokenMeta) error {
 	logger := log.FromContext(ctx)
 	logger.V(0).Info("joinSpoke", "spoke", spoke.Name)
 
-	joinArgs := []string{"join",
+	joinArgs := append([]string{
+		"join",
 		"--cluster-name", spoke.Name,
 		fmt.Sprintf("--create-namespace=%t", spoke.CreateNamespace),
 		fmt.Sprintf("--enable-sync-labels=%t", spoke.SyncLabels),
@@ -267,7 +275,7 @@ func joinSpoke(ctx context.Context, kClient client.Client, spec v1alpha1.FleetCo
 		// source args
 		"--bundle-version", spoke.Klusterlet.Source.BundleVersion,
 		"--image-registry", spoke.Klusterlet.Source.Registry,
-	}
+	}, fc.BaseArgs()...)
 
 	for k, v := range spoke.Klusterlet.Annotations {
 		joinArgs = append(joinArgs, fmt.Sprintf("--klusterlet-annotation=%s=%s", k, v))
@@ -278,14 +286,14 @@ func joinSpoke(ctx context.Context, kClient client.Client, spec v1alpha1.FleetCo
 
 	// Use hub API server from spec if provided and not forced to use internal endpoint,
 	// otherwise fall back to the hub API server from the tokenMeta
-	if spec.Hub.APIServer != "" && !spoke.Klusterlet.ForceInternalEndpointLookup {
-		joinArgs = append(joinArgs, "--hub-apiserver", spec.Hub.APIServer)
+	if fc.Spec.Hub.APIServer != "" && !spoke.Klusterlet.ForceInternalEndpointLookup {
+		joinArgs = append(joinArgs, "--hub-apiserver", fc.Spec.Hub.APIServer)
 	} else if tokenMeta.HubAPIServer != "" {
 		joinArgs = append(joinArgs, "--hub-apiserver", tokenMeta.HubAPIServer)
 	}
 
-	if spec.Hub.Ca != "" {
-		caFile, caCleanup, err := file.TmpFile([]byte(spec.Hub.Ca), "ca")
+	if fc.Spec.Hub.Ca != "" {
+		caFile, caCleanup, err := file.TmpFile([]byte(fc.Spec.Hub.Ca), "ca")
 		if caCleanup != nil {
 			defer caCleanup()
 		}
@@ -295,12 +303,12 @@ func joinSpoke(ctx context.Context, kClient client.Client, spec v1alpha1.FleetCo
 		joinArgs = append([]string{fmt.Sprintf("--ca-file=%s", caFile)}, joinArgs...)
 	}
 
-	if spec.RegistrationAuth.Driver == v1alpha1.AWSIRSARegistrationDriver {
+	if fc.Spec.RegistrationAuth.Driver == v1alpha1.AWSIRSARegistrationDriver {
 		raArgs := []string{
-			fmt.Sprintf("--registration-auth=%s", spec.RegistrationAuth.Driver),
+			fmt.Sprintf("--registration-auth=%s", fc.Spec.RegistrationAuth.Driver),
 		}
-		if spec.RegistrationAuth.HubClusterARN != "" {
-			raArgs = append(raArgs, fmt.Sprintf("--hub-cluster-arn=%s", spec.RegistrationAuth.HubClusterARN))
+		if fc.Spec.RegistrationAuth.HubClusterARN != "" {
+			raArgs = append(raArgs, fmt.Sprintf("--hub-cluster-arn=%s", fc.Spec.RegistrationAuth.HubClusterARN))
 		}
 		if spoke.ClusterARN != "" {
 			raArgs = append(raArgs, fmt.Sprintf("--managed-cluster-arn=%s", spoke.ClusterARN))
@@ -413,15 +421,16 @@ func spokeNeedsUpgrade(ctx context.Context, kClient client.Client, spoke v1alpha
 }
 
 // upgradeSpoke upgrades the Spoke cluster's klusterlet to the specified version
-func upgradeSpoke(ctx context.Context, kClient client.Client, spoke v1alpha1.Spoke) error {
+func upgradeSpoke(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetConfig, spoke v1alpha1.Spoke) error {
 	logger := log.FromContext(ctx)
 	logger.V(0).Info("upgradeSpoke", "spoke", spoke.Name)
 
-	upgradeArgs := []string{"upgrade", "klusterlet",
+	upgradeArgs := append([]string{
+		"upgrade", "klusterlet",
 		"--bundle-version", spoke.Klusterlet.Source.BundleVersion,
 		"--image-registry", spoke.Klusterlet.Source.Registry,
 		"--wait=true",
-	}
+	}, fc.BaseArgs()...)
 
 	upgradeArgs, cleanupKcfg, err := common.PrepareKubeconfig(ctx, kClient, spoke.Kubeconfig, upgradeArgs)
 	if cleanupKcfg != nil {
@@ -430,6 +439,7 @@ func upgradeSpoke(ctx context.Context, kClient client.Client, spoke v1alpha1.Spo
 	if err != nil {
 		return err
 	}
+
 	logger.V(1).Info("clusteradm upgrade klusterlet", "args", upgradeArgs)
 
 	cmd := exec.Command(clusteradm, upgradeArgs...)
@@ -459,7 +469,7 @@ func cleanupSpokes(ctx context.Context, kClient client.Client, fc *v1alpha1.Flee
 			continue
 		}
 
-		if err := unjoinSpoke(ctx, kClient, spoke.Kubeconfig, spoke.Name, spoke.Klusterlet.PurgeOperator); err != nil {
+		if err := unjoinSpoke(ctx, kClient, fc, &spoke); err != nil {
 			return err
 		}
 	}
@@ -468,27 +478,29 @@ func cleanupSpokes(ctx context.Context, kClient client.Client, fc *v1alpha1.Flee
 }
 
 // unjoinSpoke unjoins a single spoke cluster from the Hub cluster via `clusteradm unjoin`
-func unjoinSpoke(ctx context.Context, kClient client.Client, kubeconfig v1alpha1.Kubeconfig, spokeName string, purgeOperator bool) error {
+func unjoinSpoke(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetConfig, spoke v1alpha1.ISpoke) error {
 	logger := log.FromContext(ctx)
 
-	unjoinArgs := []string{
+	unjoinArgs := append([]string{
 		"unjoin",
-		"--cluster-name", spokeName,
-		fmt.Sprintf("--purge-operator=%t", purgeOperator),
-	}
-	unjoinArgs, cleanupKcfg, err := common.PrepareKubeconfig(ctx, kClient, kubeconfig, unjoinArgs)
+		"--cluster-name", spoke.GetName(),
+		fmt.Sprintf("--purge-operator=%t", spoke.GetPurgeKlusterletOperator()),
+	}, fc.BaseArgs()...)
+
+	unjoinArgs, cleanupKcfg, err := common.PrepareKubeconfig(ctx, kClient, spoke.GetKubeconfig(), unjoinArgs)
 	if cleanupKcfg != nil {
 		defer cleanupKcfg()
 	}
 	if err != nil {
-		return fmt.Errorf("failed to unjoin spoke cluster %s: %w", spokeName, err)
+		return fmt.Errorf("failed to unjoin spoke cluster %s: %w", spoke.GetName(), err)
 	}
+
 	logger.V(1).Info("clusteradm unjoin", "args", unjoinArgs)
 
 	cmd := exec.Command(clusteradm, unjoinArgs...)
-	out, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm unjoin' to complete for spoke %s...", spokeName))
+	out, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm unjoin' to complete for spoke %s...", spoke.GetName()))
 	if err != nil || strings.Contains(string(out), amwExistsError) {
-		return fmt.Errorf("failed to unjoin spoke cluster %s: %v, output: %s", spokeName, err, string(out))
+		return fmt.Errorf("failed to unjoin spoke cluster %s: %v, output: %s", spoke.GetName(), err, string(out))
 	}
 	logger.V(1).Info("spoke cluster unjoined", "output", string(out))
 
@@ -496,7 +508,7 @@ func unjoinSpoke(ctx context.Context, kClient client.Client, kubeconfig v1alpha1
 }
 
 // deregisterSpoke fully deregisters a spoke cluster, including cleaning up all relevant resources on the hub
-func deregisterSpoke(ctx context.Context, kClient client.Client, hubKubeconfig []byte, spoke *v1alpha1.JoinedSpoke) error {
+func deregisterSpoke(ctx context.Context, kClient client.Client, hubKubeconfig []byte, fc *v1alpha1.FleetConfig, spoke *v1alpha1.JoinedSpoke) error {
 	logger := log.FromContext(ctx)
 	clusterC, err := common.ClusterClient(hubKubeconfig)
 	if err != nil {
@@ -526,7 +538,7 @@ func deregisterSpoke(ctx context.Context, kClient client.Client, hubKubeconfig [
 	}
 
 	// unjoin spoke
-	if err := unjoinSpoke(ctx, kClient, spoke.Kubeconfig, spoke.Name, spoke.PurgeKlusterletOperator); err != nil {
+	if err := unjoinSpoke(ctx, kClient, fc, spoke); err != nil {
 		return err
 	}
 

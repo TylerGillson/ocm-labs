@@ -105,12 +105,12 @@ func handleAddonCreate(ctx context.Context, kClient client.Client, fc *v1alpha1.
 			return errors.Wrapf(err, "could not load configuration for add-on %s version %s", a.Name, a.Version)
 		}
 
-		args := []string{
+		args := append([]string{
 			addon,
 			create,
 			a.Name,
 			fmt.Sprintf("--version=%s", a.Version),
-		}
+		}, fc.BaseArgs()...)
 
 		// Extract manifest configuration from ConfigMap
 		// validation was already done by the webhook, so simply check if raw manifests are provided and if not, use the URL.

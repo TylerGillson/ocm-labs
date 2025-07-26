@@ -319,6 +319,17 @@ type SecretReference struct {
 	KubeconfigKey string `json:"kubeconfigKey,omitempty"`
 }
 
+// ISpoke is an interface that both Spoke and JoinedSpoke implement.
+// +kubebuilder:object:generate=false
+type ISpoke interface {
+	GetName() string
+	GetKubeconfig() Kubeconfig
+	GetPurgeKlusterletOperator() bool
+}
+
+var _ ISpoke = &Spoke{}
+var _ ISpoke = &JoinedSpoke{}
+
 // Spoke provides specifications for joining and potentially upgrading spokes.
 type Spoke struct {
 	// The name of the spoke cluster.
@@ -364,19 +375,19 @@ type Spoke struct {
 	AddOns []AddOn `json:"addOns,omitempty"`
 }
 
-// AddOn enables add-on installation on the cluster.
-type AddOn struct {
-	// The name of the add-on being enabled. Must match one of the default or manually configured add-on names.
-	// +required
-	ConfigName string `json:"configName"`
+// GetName returns the name of the spoke cluster.
+func (s *Spoke) GetName() string {
+	return s.Name
+}
 
-	// The namespace to install the add-on in. If left empty, installs into the "open-cluster-management-addon" namespace.
-	// +optional
-	InstallNamespace string `json:"installNamespace,omitempty"`
+// GetKubeconfig returns the kubeconfig for the spoke cluster.
+func (s *Spoke) GetKubeconfig() Kubeconfig {
+	return s.Kubeconfig
+}
 
-	// Annotations to apply to the add-on.
-	// +optional
-	Annotations map[string]string `json:"annotations,omitempty"`
+// GetPurgeKlusterletOperator returns the purge klusterlet operator flag.
+func (s *Spoke) GetPurgeKlusterletOperator() bool {
+	return s.Klusterlet.PurgeOperator
 }
 
 // JoinType returns a status condition type indicating that a particular Spoke cluster has joined the Hub.
@@ -392,6 +403,21 @@ func (s *Spoke) conditionName() string {
 	return name
 }
 
+// AddOn enables add-on installation on the cluster.
+type AddOn struct {
+	// The name of the add-on being enabled. Must match one of the default or manually configured add-on names.
+	// +required
+	ConfigName string `json:"configName"`
+
+	// The namespace to install the add-on in. If left empty, installs into the "open-cluster-management-addon" namespace.
+	// +optional
+	InstallNamespace string `json:"installNamespace,omitempty"`
+
+	// Annotations to apply to the add-on.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
 // JoinedSpoke represents a spoke that has been joined to a hub.
 type JoinedSpoke struct {
 	// The name of the spoke cluster.
@@ -405,6 +431,21 @@ type JoinedSpoke struct {
 	// +kubebuilder:default:=true
 	// +optional
 	PurgeKlusterletOperator bool `json:"purgeKlusterletOperator,omitempty"`
+}
+
+// GetName returns the name of the joined spoke cluster.
+func (j *JoinedSpoke) GetName() string {
+	return j.Name
+}
+
+// GetKubeconfig returns the kubeconfig for the joined spoke cluster.
+func (j *JoinedSpoke) GetKubeconfig() Kubeconfig {
+	return j.Kubeconfig
+}
+
+// GetPurgeKlusterletOperator returns the purge klusterlet operator flag for the joined spoke cluster.
+func (j *JoinedSpoke) GetPurgeKlusterletOperator() bool {
+	return j.PurgeKlusterletOperator
 }
 
 // UnjoinType returns a status condition type indicating that a particular Spoke cluster has been removed from the Hub.
@@ -583,6 +624,14 @@ type FleetConfig struct {
 
 	Spec   FleetConfigSpec   `json:"spec,omitzero"`
 	Status FleetConfigStatus `json:"status,omitempty"`
+}
+
+// BaseArgs returns the base arguments for all clusteradm commands.
+func (m *FleetConfig) BaseArgs() []string {
+	return []string{
+		fmt.Sprintf("--timeout=%d", m.Spec.Timeout),
+		fmt.Sprintf("--v=%d", m.Spec.LogVerbosity),
+	}
 }
 
 // GetCondition gets the condition with the supplied type, if it exists.
