@@ -147,6 +147,16 @@ func (c Condition) Equal(other Condition) bool {
 
 // Hub provides specifications for an OCM hub cluster.
 type Hub struct {
+	// APIServer is the API server URL for the Hub cluster. If provided, spokes clusters will
+	// join the hub using this API server instead of the one in the bootstrap kubeconfig.
+	// Spoke clusters with ForceInternalEndpointLookup set to true will ignore this field.
+	// +optional
+	APIServer string `json:"apiServer,omitempty"`
+
+	// Hub cluster CA certificate, optional
+	// +optional
+	Ca string `json:"ca,omitempty"`
+
 	// ClusterManager configuration.
 	// +optional
 	ClusterManager *ClusterManager `json:"clusterManager,omitempty"`
@@ -168,12 +178,6 @@ type Hub struct {
 	// This is an alpha stage flag.
 	// +optional
 	SingletonControlPlane *SingletonControlPlane `json:"singleton,omitempty"`
-
-	// APIServer is the API server URL for the Hub cluster. If provided, the hub will be joined
-	// using this API server instead of the one in the obtained kubeconfig. This is useful when
-	// using in-cluster kubeconfig when that kubeconfig would return an incorrect API server URL.
-	// +optional
-	APIServer string `json:"apiServer,omitempty"`
 }
 
 // SingletonControlPlane is the configuration for a singleton control plane
@@ -322,10 +326,6 @@ type Spoke struct {
 	// Kubeconfig details for the Spoke cluster.
 	// +required
 	Kubeconfig Kubeconfig `json:"kubeconfig"`
-
-	// Hub cluster CA certificate, optional
-	// +optional
-	Ca string `json:"ca,omitempty"`
 
 	// Proxy CA certificate, optional
 	// +optional

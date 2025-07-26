@@ -276,11 +276,23 @@ func joinSpoke(ctx context.Context, kClient client.Client, spec v1alpha1.FleetCo
 	// resources args
 	joinArgs = append(joinArgs, common.PrepareResources(spoke.Klusterlet.Resources)...)
 
-	// Use hub API server from spec if provided, otherwise fall back to tokenMeta
-	if spec.Hub.APIServer != "" {
+	// Use hub API server from spec if provided and not forced to use internal endpoint,
+	// otherwise fall back to the hub API server from the tokenMeta
+	if spec.Hub.APIServer != "" && !spoke.Klusterlet.ForceInternalEndpointLookup {
 		joinArgs = append(joinArgs, "--hub-apiserver", spec.Hub.APIServer)
 	} else if tokenMeta.HubAPIServer != "" {
 		joinArgs = append(joinArgs, "--hub-apiserver", tokenMeta.HubAPIServer)
+	}
+
+	if spec.Hub.Ca != "" {
+		caFile, caCleanup, err := file.TmpFile([]byte(spec.Hub.Ca), "ca")
+		if caCleanup != nil {
+			defer caCleanup()
+		}
+		if err != nil {
+			return fmt.Errorf("failed to write hub CA to disk: %w", err)
+		}
+		joinArgs = append([]string{fmt.Sprintf("--ca-file=%s", caFile)}, joinArgs...)
 	}
 
 	if spec.RegistrationAuth.Driver == v1alpha1.AWSIRSARegistrationDriver {
@@ -315,16 +327,6 @@ func joinSpoke(ctx context.Context, kClient client.Client, spec v1alpha1.FleetCo
 		joinArgs = append(joinArgs, "--managed-cluster-kubeconfig", mgdKcfg)
 	}
 
-	if spoke.Ca != "" {
-		caFile, caCleanup, err := file.TmpFile([]byte(spoke.Ca), "ca")
-		if caCleanup != nil {
-			defer caCleanup()
-		}
-		if err != nil {
-			return fmt.Errorf("failed to write CA to disk: %w", err)
-		}
-		joinArgs = append([]string{fmt.Sprintf("--ca-file=%s", caFile)}, joinArgs...)
-	}
 	if spoke.ProxyCa != "" {
 		proxyCaFile, proxyCaCleanup, err := file.TmpFile([]byte(spoke.ProxyCa), "proxy-ca")
 		if proxyCaCleanup != nil {

@@ -91,9 +91,12 @@ spec:
                 properties:
                   apiServer:
                     description: |-
-                      APIServer is the API server URL for the Hub cluster. If provided, the hub will be joined
-                      using this API server instead of the one in the obtained kubeconfig. This is useful when
-                      using in-cluster kubeconfig when that kubeconfig would return an incorrect API server URL.
+                      APIServer is the API server URL for the Hub cluster. If provided, spokes clusters will
+                      join the hub using this API server instead of the one in the bootstrap kubeconfig.
+                      Spoke clusters with ForceInternalEndpointLookup set to true will ignore this field.
+                    type: string
+                  ca:
+                    description: Hub cluster CA certificate, optional
                     type: string
                   clusterManager:
                     description: ClusterManager configuration.
@@ -329,9 +332,6 @@ spec:
                         - configName
                         type: object
                       type: array
-                    ca:
-                      description: Hub cluster CA certificate, optional
-                      type: string
                     clusterARN:
                       description: |-
                         ClusterARN is the ARN of the spoke cluster.
