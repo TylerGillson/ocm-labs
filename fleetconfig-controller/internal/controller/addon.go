@@ -151,11 +151,12 @@ func handleAddonCreate(ctx context.Context, kClient client.Client, fc *v1alpha1.
 		}
 
 		cmd := exec.Command(clusteradm, args...)
-		out, err := exec_utils.CmdWithLogs(ctx, cmd, "waiting for 'clusteradm addon create' to complete...")
+		stdout, stderr, err := exec_utils.CmdWithLogs(ctx, cmd, "waiting for 'clusteradm addon create' to complete...")
 		if err != nil {
+			out := append(stdout, stderr...)
 			return fmt.Errorf("failed to create addon: %v, output: %s", err, string(out))
 		}
-		logger.V(0).Info("created addon", "AddOnTemplate", a.Name)
+		logger.V(0).Info("created addon", "AddOnTemplate", a.Name, "output", string(stdout))
 	}
 	return nil
 }

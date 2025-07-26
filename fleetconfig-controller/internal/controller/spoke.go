@@ -205,11 +205,12 @@ func acceptCluster(ctx context.Context, fc *v1alpha1.FleetConfig, name string) e
 	//     If set, then skip check and approve csr directly.
 
 	cmd := exec.Command(clusteradm, acceptArgs...)
-	out, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm accept' to complete for spoke %s...", name))
+	stdout, stderr, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm accept' to complete for spoke %s...", name))
 	if err != nil {
+		out := append(stdout, stderr...)
 		return fmt.Errorf("failed to accept spoke cluster join request: %v, output: %s", err, string(out))
 	}
-	logger.V(1).Info("spoke cluster join request accepted", "output", string(out))
+	logger.V(1).Info("spoke cluster join request accepted", "output", string(stdout))
 
 	return nil
 }
@@ -242,14 +243,15 @@ func getToken(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetConf
 	logger.V(1).Info("clusteradm get token", "args", tokenArgs)
 
 	cmd := exec.Command(clusteradm, tokenArgs...)
-	out, err := exec_utils.CmdWithLogs(ctx, cmd, "waiting for 'clusteradm get token' to complete...")
+	stdout, stderr, err := exec_utils.CmdWithLogs(ctx, cmd, "waiting for 'clusteradm get token' to complete...")
 	if err != nil {
+		out := append(stdout, stderr...)
 		return nil, fmt.Errorf("failed to get join token: %v, output: %s", err, string(out))
 	}
-	logger.V(1).Info("got join token", "output", string(out))
+	logger.V(1).Info("got join token", "output", string(stdout))
 
 	tokenMeta := &tokenMeta{}
-	if err := json.Unmarshal(out, &tokenMeta); err != nil {
+	if err := json.Unmarshal(stdout, &tokenMeta); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal join token: %w", err)
 	}
 	return tokenMeta, nil
@@ -360,11 +362,12 @@ func joinSpoke(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetCon
 	logger.V(1).Info("clusteradm join", "args", joinArgs)
 
 	cmd := exec.Command(clusteradm, joinArgs...)
-	out, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm join' to complete for spoke %s...", spoke.Name))
+	stdout, stderr, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm join' to complete for spoke %s...", spoke.Name))
 	if err != nil {
+		out := append(stdout, stderr...)
 		return fmt.Errorf("clusteradm join command failed for spoke %s: %v, output: %s", spoke.Name, err, string(out))
 	}
-	logger.V(1).Info("successfully requested spoke cluster join", "output", string(out))
+	logger.V(1).Info("successfully requested spoke cluster join", "output", string(stdout))
 
 	return nil
 }
@@ -443,14 +446,15 @@ func upgradeSpoke(ctx context.Context, kClient client.Client, fc *v1alpha1.Fleet
 	logger.V(1).Info("clusteradm upgrade klusterlet", "args", upgradeArgs)
 
 	cmd := exec.Command(clusteradm, upgradeArgs...)
-	out, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm upgrade klusterlet' to complete for spoke %s...", spoke.Name))
+	stdout, stderr, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm upgrade klusterlet' to complete for spoke %s...", spoke.Name))
 	if err != nil {
+		out := append(stdout, stderr...)
 		return fmt.Errorf(
 			"failed to upgrade klusterlet on spoke cluster %s to %s: %v, output: %s",
 			spoke.Name, spoke.Klusterlet.Source.BundleVersion, err, string(out),
 		)
 	}
-	logger.V(1).Info("klusterlet upgraded", "output", string(out))
+	logger.V(1).Info("klusterlet upgraded", "output", string(stdout))
 
 	return nil
 }
@@ -498,11 +502,12 @@ func unjoinSpoke(ctx context.Context, kClient client.Client, fc *v1alpha1.FleetC
 	logger.V(1).Info("clusteradm unjoin", "args", unjoinArgs)
 
 	cmd := exec.Command(clusteradm, unjoinArgs...)
-	out, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm unjoin' to complete for spoke %s...", spoke.GetName()))
+	stdout, stderr, err := exec_utils.CmdWithLogs(ctx, cmd, fmt.Sprintf("waiting for 'clusteradm unjoin' to complete for spoke %s...", spoke.GetName()))
+	out := append(stdout, stderr...)
 	if err != nil || strings.Contains(string(out), amwExistsError) {
 		return fmt.Errorf("failed to unjoin spoke cluster %s: %v, output: %s", spoke.GetName(), err, string(out))
 	}
-	logger.V(1).Info("spoke cluster unjoined", "output", string(out))
+	logger.V(1).Info("spoke cluster unjoined", "output", string(stdout))
 
 	return nil
 }
