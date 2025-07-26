@@ -46,7 +46,7 @@ type FleetConfigSpec struct {
 
 	// LogVerbosity is the verbosity of the logs.
 	// +kubebuilder:validation:Enum=0;1;2;3;4;5;6;7;8;9;10
-	// +kubebuilder:default:="0"
+	// +kubebuilder:default:=0
 	// +optional
 	LogVerbosity int `json:"logVerbosity,omitempty"`
 }

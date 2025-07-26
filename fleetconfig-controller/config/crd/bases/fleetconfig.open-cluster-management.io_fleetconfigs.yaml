@@ -264,7 +264,7 @@ spec:
                 - kubeconfig
                 type: object
               logVerbosity:
-                default: "0"
+                default: 0
                 description: LogVerbosity is the verbosity of the logs.
                 enum:
                 - 0
